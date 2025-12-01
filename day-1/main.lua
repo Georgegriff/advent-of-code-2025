@@ -81,7 +81,9 @@ function reset_vault()
         target_value = START_VALUE,
         logical_value = START_VALUE,
         zero_crossings = 0,
-        progress = 0 -- Animation progress (0 to instruction.amount)
+        progress = 0,               -- Animation progress (0 to instruction.amount)
+        door_open_time = nil,       -- Time when door was opened
+        door_animation_progress = 0 -- 0 to 1 for door opening animation
     }
     current_instruction_idx = 1
 end
@@ -105,6 +107,25 @@ function love.update(dt)
         if flake.y > love.graphics.getHeight() then
             flake.y = -10
             flake.x = math.random(0, love.graphics.getWidth())
+        end
+    end
+
+    -- Check if vault just opened and start door animation
+    local is_open = (not debug_pause) and current_instruction_idx > #instructions
+    if is_open and not vault.door_open_time then
+        vault.door_open_time = love.timer.getTime()
+    end
+
+    -- Update door animation (subtle backwards movement over 0.8 seconds)
+    if vault.door_open_time then
+        local elapsed = love.timer.getTime() - vault.door_open_time
+        local duration = 0.8
+        if elapsed < duration then
+            -- Ease out cubic for smooth deceleration
+            local t = elapsed / duration
+            vault.door_animation_progress = 1 - math.pow(1 - t, 3)
+        else
+            vault.door_animation_progress = 1
         end
     end
 
@@ -255,39 +276,61 @@ function draw_3d_vault()
         love.graphics.circle("line", vault.x, vault.y, vault_radius * 0.85)
         love.graphics.setLineWidth(1)
 
-        -- Draw open circular door to the left (hinged at vault edge)
-        local door_x = vault.x - vault_radius - vault_radius - 10
-        local door_y = vault.y
+        -- Apply subtle backwards animation to door (scale down and move slightly)
+        local anim_scale = 1.0 - (vault.door_animation_progress * 0.08) -- Subtle 8% scale reduction
+        local anim_offset_x = vault.door_animation_progress * 12        -- Move away horizontally
+        local anim_offset_y = vault.door_animation_progress * 8         -- Move away slightly down for depth
+        local anim_alpha = 1.0 - (vault.door_animation_progress * 0.15) -- Slight fade for depth
+
+        -- Hinge stays fixed at vault edge
+        local hinge_x = vault.x - vault_radius - 10
+
+        -- Draw open circular door to the left (edge always touches hinge)
+        local door_radius = vault_radius * anim_scale
+        -- Door center is positioned so its right edge touches the hinge
+        local door_x = hinge_x - door_radius
+        local door_y = vault.y + anim_offset_y
 
         -- Draw door 3D edge (circular)
-        love.graphics.setColor(0.12, 0.1, 0.1)
-        love.graphics.circle("fill", door_x + 10, door_y, vault_radius)
+        love.graphics.setColor(0.12 * anim_alpha, 0.1 * anim_alpha, 0.1 * anim_alpha)
+        love.graphics.circle("fill", door_x + 10, door_y, door_radius)
 
         -- Draw door face (circular vault door)
-        love.graphics.setColor(0.15, 0.12, 0.12)
-        love.graphics.circle("fill", door_x, door_y, vault_radius)
+        love.graphics.setColor(0.15 * anim_alpha, 0.12 * anim_alpha, 0.12 * anim_alpha)
+        love.graphics.circle("fill", door_x, door_y, door_radius)
 
         -- Draw outer ring
-        love.graphics.setColor(0.25, 0.22, 0.22)
-        love.graphics.setLineWidth(15)
-        love.graphics.circle("line", door_x, door_y, vault_radius * 0.95)
+        love.graphics.setColor(0.25 * anim_alpha, 0.22 * anim_alpha, 0.22 * anim_alpha)
+        love.graphics.setLineWidth(15 * anim_scale)
+        love.graphics.circle("line", door_x, door_y, door_radius * 0.95)
         love.graphics.setLineWidth(1)
 
         -- Draw locking bolts around door
         for i = 1, 8 do
             local angle = (i / 8) * math.pi * 2
-            local bolt_x = door_x + math.cos(angle) * vault_radius * 0.7
-            local bolt_y = door_y + math.sin(angle) * vault_radius * 0.7
-            love.graphics.setColor(0.3, 0.3, 0.3)
-            love.graphics.circle("fill", bolt_x, bolt_y, 8)
-            love.graphics.setColor(0.4, 0.4, 0.4)
-            love.graphics.circle("fill", bolt_x, bolt_y, 5)
+            local bolt_x = door_x + math.cos(angle) * door_radius * 0.7
+            local bolt_y = door_y + math.sin(angle) * door_radius * 0.7
+            love.graphics.setColor(0.3 * anim_alpha, 0.3 * anim_alpha, 0.3 * anim_alpha)
+            love.graphics.circle("fill", bolt_x, bolt_y, 8 * anim_scale)
+            love.graphics.setColor(0.4 * anim_alpha, 0.4 * anim_alpha, 0.4 * anim_alpha)
+            love.graphics.circle("fill", bolt_x, bolt_y, 5 * anim_scale)
         end
 
-        -- Draw hinges connecting door to vault frame
+        -- Draw hinges connecting door to vault frame (pill-shaped, smaller)
         love.graphics.setColor(0.2, 0.2, 0.2)
-        love.graphics.rectangle("fill", vault.x - vault_radius - 10, door_y - 40, 20, 25)
-        love.graphics.rectangle("fill", vault.x - vault_radius - 10, door_y + 20, 20, 25)
+
+        -- Top hinge
+        local hinge_width = 12
+        local hinge_height = 18
+        local hinge_radius = hinge_width / 2
+        love.graphics.circle("fill", hinge_x + hinge_radius, vault.y - 30, hinge_radius)
+        love.graphics.circle("fill", hinge_x + hinge_radius, vault.y - 30 + hinge_height, hinge_radius)
+        love.graphics.rectangle("fill", hinge_x, vault.y - 30, hinge_width, hinge_height)
+
+        -- Bottom hinge
+        love.graphics.circle("fill", hinge_x + hinge_radius, vault.y + 15, hinge_radius)
+        love.graphics.circle("fill", hinge_x + hinge_radius, vault.y + 15 + hinge_height, hinge_radius)
+        love.graphics.rectangle("fill", hinge_x, vault.y + 15, hinge_width, hinge_height)
 
         -- Draw vault frame (circular opening)
         love.graphics.setColor(0.2, 0.18, 0.18)
@@ -479,6 +522,8 @@ function love.keypressed(key)
         vault.logical_value = START_VALUE
         vault.zero_crossings = 0
         vault.progress = 0
+        vault.door_open_time = nil
+        vault.door_animation_progress = 0
         current_instruction_idx = 1
         SPEED = DEFAULT_SPEED
         speed_slider.value = DEFAULT_SPEED
