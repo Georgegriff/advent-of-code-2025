@@ -1,5 +1,5 @@
 local m = require "part1"
-pcall(function() require("lldebugger").start() end)
+-- pcall(function() require("lldebugger").start() end)
 describe("solutions", function()
     it("parses instruction", function()
         local instruction = m.parse_instruction("L68")
