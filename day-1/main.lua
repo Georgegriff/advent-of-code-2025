@@ -266,14 +266,14 @@ function draw_3d_vault()
     local is_open = (not debug_pause) and current_instruction_idx > #instructions
 
     if is_open then
-        -- Draw open vault - interior circular opening
+        -- Draw open vault - interior circular opening (expanded to fill the frame)
         love.graphics.setColor(0.05, 0.03, 0.03)
-        love.graphics.circle("fill", vault.x, vault.y, vault_radius * 0.9)
+        love.graphics.circle("fill", vault.x, vault.y, vault_radius * 1.05)
 
         -- Draw interior ring detail
         love.graphics.setColor(0.1, 0.08, 0.08)
         love.graphics.setLineWidth(10)
-        love.graphics.circle("line", vault.x, vault.y, vault_radius * 0.85)
+        love.graphics.circle("line", vault.x, vault.y, vault_radius * 0.95)
         love.graphics.setLineWidth(1)
 
         -- Apply subtle backwards animation to door (scale down and move slightly)
