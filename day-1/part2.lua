@@ -11,6 +11,7 @@ local default_min_location = 0
 ---@class Instruction
 ---@field direction number
 ---@field amount number
+---@field command string
 
 function M.solution(input_file)
     local number_of_zeroes = 0
@@ -51,7 +52,8 @@ function M.parse_instruction(instruction)
     end
     return {
         direction = direction,
-        amount = amount
+        amount = amount,
+        command = instruction
     }
 end
 
@@ -100,7 +102,7 @@ function M.follow_instruction(current_position, instruction, min_location, max_l
     end
 end
 
-if script_utils.is_main() then
+if script_utils.is_main() and not love then
     local input_file = arg[1] or "./inputs/test.txt"
     M.solution(input_file)
 end

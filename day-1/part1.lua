@@ -10,6 +10,8 @@ local default_min_location = 0
 ---@field direction number
 ---@field amount number
 
+
+---
 function M.solution(input_file)
     local number_of_zeroes = 0
     local current_position = start_location
@@ -59,7 +61,7 @@ function M.follow_instruction(current_position, instruction, min_location, max_l
     return new_position
 end
 
-if script_utils.is_main() then
+if script_utils.is_main() and not love then
     local input_file = arg[1] or "./inputs/test.txt"
     M.solution(input_file)
 end
