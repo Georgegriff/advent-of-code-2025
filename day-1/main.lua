@@ -9,13 +9,14 @@ end
 MIN_VALUE = 0
 MAX_VALUE = 99
 START_VALUE = 50
-DEFAULT_SPEED = 10
+DEFAULT_SPEED = 30
 SPEED = DEFAULT_SPEED
 MAX_SPEED = 100000
 ---@class Instruction[]
 local instructions = {}
 local current_instruction_idx = 1
 local use_test_input = true -- Toggle between test.txt and input.txt
+local debug_pause = false   -- Pause when complete instead of opening vault
 
 -- Slider configuration
 local slider = {
@@ -90,11 +91,17 @@ function love.update(dt)
         end
     end
 
-    -- Update progress
-    vault.progress = vault.progress + SPEED * dt
+    -- PAUSE when all instructions complete for debugging
+    if debug_pause and current_instruction_idx > #instructions then
+        return
+    end
+
+    -- Calculate how much to move this frame
+    local movement_this_frame = SPEED * dt
+    local range = MAX_VALUE - MIN_VALUE + 1
 
     -- Process multiple instructions per frame if needed
-    while current_instruction_idx <= #instructions do
+    while current_instruction_idx <= #instructions and movement_this_frame > 0 do
         ---@class Instruction
         local current_instruction = instructions[current_instruction_idx]
 
@@ -103,8 +110,28 @@ function love.update(dt)
             MAX_VALUE)
         vault.target_value = target
 
-        -- Check if we've completed this instruction
-        if vault.progress >= current_instruction.amount then
+        -- Calculate how much is left in this instruction
+        local remaining_in_instruction = current_instruction.amount - vault.progress
+
+        if movement_this_frame >= remaining_in_instruction then
+            -- Complete this instruction
+            local movement_to_use = remaining_in_instruction
+
+            -- Update visual value
+            if current_instruction.direction == -1 then
+                -- L: decrease value (dial rotates clockwise due to negative rotationOffset)
+                vault.value = vault.value - movement_to_use
+                while vault.value < MIN_VALUE do
+                    vault.value = vault.value + range
+                end
+            else
+                -- R: increase value (dial rotates counter-clockwise due to negative rotationOffset)
+                vault.value = vault.value + movement_to_use
+                while vault.value > MAX_VALUE do
+                    vault.value = vault.value - range
+                end
+            end
+
             -- Move to next instruction and add zero crossings from this instruction
             vault.logical_value = vault.target_value
             vault.zero_crossings = vault.zero_crossings + zero_crossings
@@ -112,22 +139,38 @@ function love.update(dt)
             if vault.target_value == 0 then
                 vault.zero_crossings = vault.zero_crossings + 1
             end
-            vault.progress = vault.progress - current_instruction.amount
+
+            -- Sync visual value to logical value to prevent drift
+            vault.value = vault.logical_value
+
+            -- Debug logging
+            print(string.format("Completed %s: visual=%.2f logical=%d target=%d",
+                current_instruction.command, vault.value, vault.logical_value, vault.target_value))
+
+            vault.progress = 0
+            movement_this_frame = movement_this_frame - movement_to_use
             current_instruction_idx = current_instruction_idx + 1
         else
-            -- Still working on this instruction
-            break
-        end
-    end
+            -- Continue with current instruction
+            vault.progress = vault.progress + movement_this_frame
 
-    -- Update visual value (animate progress from logical_value to target_value)
-    if current_instruction_idx <= #instructions then
-        local current_instruction = instructions[current_instruction_idx]
-        local progress_fraction = math.min(vault.progress / current_instruction.amount, 1)
-        vault.value = vault.logical_value + (vault.target_value - vault.logical_value) * progress_fraction
-    else
-        -- All done, snap to final value
-        vault.value = vault.logical_value
+            -- Update visual value
+            if current_instruction.direction == -1 then
+                -- L: decrease value (dial rotates clockwise due to negative rotationOffset)
+                vault.value = vault.value - movement_this_frame
+                while vault.value < MIN_VALUE do
+                    vault.value = vault.value + range
+                end
+            else
+                -- R: increase value (dial rotates counter-clockwise due to negative rotationOffset)
+                vault.value = vault.value + movement_this_frame
+                while vault.value > MAX_VALUE do
+                    vault.value = vault.value - range
+                end
+            end
+
+            movement_this_frame = 0
+        end
     end
 end
 
@@ -179,7 +222,7 @@ end
 
 function draw_3d_vault()
     local vault_radius = 150
-    local is_open = current_instruction_idx > #instructions
+    local is_open = (not debug_pause) and current_instruction_idx > #instructions
 
     if is_open then
         -- Draw open vault - interior circular opening
@@ -309,7 +352,7 @@ function draw_tick_marks()
     -- Gold tick marks
     love.graphics.setColor(1, 0.84, 0)
     local totalValues = MAX_VALUE - MIN_VALUE + 1
-    -- Calculate rotation offset based on current value
+    -- Calculate rotation offset based on current value (negative to rotate dial opposite to value)
     local rotationOffset = -(vault.value / totalValues) * math.pi * 2
 
     for i = MIN_VALUE, MAX_VALUE do
@@ -331,7 +374,7 @@ function draw_numbers()
     -- White numbers with gold shadow for festive look
     love.graphics.setNewFont(12)
     local totalValues = MAX_VALUE - MIN_VALUE + 1
-    -- Calculate rotation offset based on current value
+    -- Calculate rotation offset based on current value (negative to rotate dial opposite to value)
     local rotationOffset = -(vault.value / totalValues) * math.pi * 2
 
     for i = MIN_VALUE, MAX_VALUE, 10 do
@@ -366,7 +409,7 @@ end
 function draw_current_instruction()
     local screenHeight = love.graphics.getHeight()
 
-    if current_instruction_idx > #instructions then
+    if (not debug_pause) and current_instruction_idx > #instructions then
         -- Vault is open - show solution inside the vault
         love.graphics.setNewFont(28)
         love.graphics.setColor(1, 0.84, 0)
@@ -441,7 +484,8 @@ function love.draw()
     draw_3d_vault()
 
     -- Only draw dial and related elements if vault is not open
-    if current_instruction_idx <= #instructions then
+    local is_open = (not debug_pause) and current_instruction_idx > #instructions
+    if not is_open then
         draw_dial()
         draw_tick_marks()
         draw_numbers()
