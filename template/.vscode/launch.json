@@ -4,7 +4,7 @@
     {
       "type": "lua-local",
       "request": "launch",
-      "name": "Debug",
+      "name": "Debug Love",
       "program": {
         "command": "love"
       },
@@ -13,7 +13,7 @@
     {
       "type": "lua-local",
       "request": "launch",
-      "name": "Run",
+      "name": "Run Love",
       "program": {
         "command": "love"
       },

@@ -10,7 +10,7 @@ function M.solution(input_file)
     return 0
 end
 
-if script_utils.is_main() then
+if script_utils.is_main() and not love then
     local input_file = arg[1] or "./inputs/test.txt"
     M.solution(input_file)
 end

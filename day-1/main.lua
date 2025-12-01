@@ -3,9 +3,14 @@ local file_utils = require("utils.file")
 local m = require("part2")
 local Slider = require("ui.slider")
 local Toggle = require("ui.toggle")
+local Snow = require("ui.snow")
 if arg[2] == "debug" then
     require("lldebugger").start()
 end
+
+-- Window configuration
+WINDOW_WIDTH = 1000
+WINDOW_HEIGHT = 600
 
 -- Vault dial configuration
 MIN_VALUE = 0
@@ -53,15 +58,11 @@ local input_toggle = Toggle.create({
 })
 
 -- Snow particles for festive effect
-local snowflakes = {}
-for i = 1, 100 do
-    table.insert(snowflakes, {
-        x = math.random(0, 1000),
-        y = math.random(0, 600),
-        speed = math.random(10, 30),
-        size = math.random(2, 5)
-    })
-end
+local snow = Snow.create({
+    particle_count = 100,
+    width = WINDOW_WIDTH,
+    height = WINDOW_HEIGHT
+})
 
 function load_instructions()
     instructions = {}
@@ -90,7 +91,7 @@ end
 
 function love.load()
     -- Set window size to accommodate opened vault door
-    love.window.setMode(1000, 600, { resizable = false })
+    love.window.setMode(WINDOW_WIDTH, WINDOW_HEIGHT, { resizable = false })
     love.window.setTitle("Love2D - Day 1: Secret Entrance")
 
     -- Enable antialiasing
@@ -103,13 +104,7 @@ end
 
 function love.update(dt)
     -- Update snow
-    for _, flake in ipairs(snowflakes) do
-        flake.y = flake.y + flake.speed * dt
-        if flake.y > love.graphics.getHeight() then
-            flake.y = -10
-            flake.x = math.random(0, love.graphics.getWidth())
-        end
-    end
+    Snow.update(snow, dt)
 
     -- Check if vault just opened and start door animation
     local is_open = (not debug_pause) and current_instruction_idx > #instructions
@@ -219,13 +214,6 @@ end
 function draw_background()
     -- Dark Christmas green background
     love.graphics.clear(0.05, 0.15, 0.1)
-end
-
-function draw_snow()
-    love.graphics.setColor(1, 1, 1, 0.8)
-    for _, flake in ipairs(snowflakes) do
-        love.graphics.circle("fill", flake.x, flake.y, flake.size)
-    end
 end
 
 function draw_title()
@@ -482,7 +470,7 @@ end
 
 function love.draw()
     draw_background()
-    draw_snow()
+    Snow.draw(snow)
     draw_title()
     Slider.draw(speed_slider)
     Toggle.draw(input_toggle)
