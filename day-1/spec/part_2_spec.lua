@@ -1,5 +1,5 @@
-local m = require "part1"
-pcall(function() require("lldebugger").start() end)
+local m = require "part2"
+
 describe("solutions", function()
     it("test input", function()
         assert.are.equal(0, m.solution("./inputs/test.txt"))
