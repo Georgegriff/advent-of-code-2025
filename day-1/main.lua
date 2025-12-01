@@ -91,6 +91,7 @@ end
 function love.load()
     -- Set window size to accommodate opened vault door
     love.window.setMode(1000, 600, { resizable = false })
+    love.window.setTitle("Love2D - Day 1: Secret Entrance")
 
     -- Enable antialiasing
     love.graphics.setLineStyle("smooth")
@@ -227,24 +228,6 @@ function draw_snow()
     end
 end
 
-function draw_christmas_stars()
-    -- Draw decorative stars around the dial
-    local time = love.timer.getTime()
-    for i = 1, 8 do
-        local angle = (i / 8) * math.pi * 2
-        local distance = vault.radius * 1.4
-        local x = vault.x + math.cos(angle) * distance
-        local y = vault.y + math.sin(angle) * distance
-        local pulse = 0.5 + 0.5 * math.sin(time * 3 + i)
-
-        -- Draw gold star
-        love.graphics.setColor(1, 0.84, 0, 0.3 + pulse * 0.4)
-        love.graphics.circle("fill", x, y, 4 + pulse * 2)
-        love.graphics.setColor(1, 1, 1, 0.5 + pulse * 0.5)
-        love.graphics.circle("fill", x, y, 2)
-    end
-end
-
 function draw_title()
     love.graphics.setNewFont(24)
     local title = "Day 1: Secret Entrance"
@@ -267,11 +250,11 @@ function draw_3d_vault()
 
     if is_open then
         -- Draw open vault - interior circular opening (expanded to fill the frame)
-        love.graphics.setColor(0.05, 0.03, 0.03)
+        love.graphics.setColor(0.05, 0.05, 0.06)
         love.graphics.circle("fill", vault.x, vault.y, vault_radius * 1.05)
 
         -- Draw interior ring detail
-        love.graphics.setColor(0.1, 0.08, 0.08)
+        love.graphics.setColor(0.15, 0.15, 0.18)
         love.graphics.setLineWidth(10)
         love.graphics.circle("line", vault.x, vault.y, vault_radius * 0.95)
         love.graphics.setLineWidth(1)
@@ -291,16 +274,16 @@ function draw_3d_vault()
         local door_x = hinge_x - door_radius
         local door_y = vault.y + anim_offset_y
 
-        -- Draw door 3D edge (circular)
-        love.graphics.setColor(0.12 * anim_alpha, 0.1 * anim_alpha, 0.1 * anim_alpha)
+        -- Draw door 3D edge (circular) - shadow
+        love.graphics.setColor(0.15 * anim_alpha, 0.15 * anim_alpha, 0.18 * anim_alpha)
         love.graphics.circle("fill", door_x + 10, door_y, door_radius)
 
-        -- Draw door face (circular vault door)
-        love.graphics.setColor(0.15 * anim_alpha, 0.12 * anim_alpha, 0.12 * anim_alpha)
+        -- Draw door face (circular vault door) - dark metal
+        love.graphics.setColor(0.25 * anim_alpha, 0.25 * anim_alpha, 0.28 * anim_alpha)
         love.graphics.circle("fill", door_x, door_y, door_radius)
 
-        -- Draw outer ring
-        love.graphics.setColor(0.25 * anim_alpha, 0.22 * anim_alpha, 0.22 * anim_alpha)
+        -- Draw outer ring - metallic
+        love.graphics.setColor(0.4 * anim_alpha, 0.4 * anim_alpha, 0.45 * anim_alpha)
         love.graphics.setLineWidth(15 * anim_scale)
         love.graphics.circle("line", door_x, door_y, door_radius * 0.95)
         love.graphics.setLineWidth(1)
@@ -310,14 +293,14 @@ function draw_3d_vault()
             local angle = (i / 8) * math.pi * 2
             local bolt_x = door_x + math.cos(angle) * door_radius * 0.7
             local bolt_y = door_y + math.sin(angle) * door_radius * 0.7
-            love.graphics.setColor(0.3 * anim_alpha, 0.3 * anim_alpha, 0.3 * anim_alpha)
+            love.graphics.setColor(0.35 * anim_alpha, 0.35 * anim_alpha, 0.4 * anim_alpha)
             love.graphics.circle("fill", bolt_x, bolt_y, 8 * anim_scale)
-            love.graphics.setColor(0.4 * anim_alpha, 0.4 * anim_alpha, 0.4 * anim_alpha)
+            love.graphics.setColor(0.5 * anim_alpha, 0.5 * anim_alpha, 0.55 * anim_alpha)
             love.graphics.circle("fill", bolt_x, bolt_y, 5 * anim_scale)
         end
 
         -- Draw hinges connecting door to vault frame (pill-shaped, smaller)
-        love.graphics.setColor(0.2, 0.2, 0.2)
+        love.graphics.setColor(0.3, 0.3, 0.35)
 
         -- Top hinge
         local hinge_width = 12
@@ -333,26 +316,26 @@ function draw_3d_vault()
         love.graphics.rectangle("fill", hinge_x, vault.y + 15, hinge_width, hinge_height)
 
         -- Draw vault frame (circular opening)
-        love.graphics.setColor(0.2, 0.18, 0.18)
+        love.graphics.setColor(0.3, 0.3, 0.35)
         love.graphics.setLineWidth(12)
         love.graphics.circle("line", vault.x, vault.y, vault_radius)
         love.graphics.setLineWidth(1)
     else
         -- Draw closed vault door
-        -- Draw outer vault ring (3D effect)
-        love.graphics.setColor(0.2, 0.18, 0.18)
+        -- Draw outer vault ring (3D effect - shadow)
+        love.graphics.setColor(0.2, 0.2, 0.25)
         love.graphics.circle("fill", vault.x + 3, vault.y + 3, vault_radius + 10)
 
-        -- Draw main outer ring
-        love.graphics.setColor(0.25, 0.22, 0.22)
+        -- Draw main outer ring - dark metal
+        love.graphics.setColor(0.35, 0.35, 0.4)
         love.graphics.circle("fill", vault.x, vault.y, vault_radius + 10)
 
-        -- Draw main vault door face
-        love.graphics.setColor(0.15, 0.12, 0.12)
+        -- Draw main vault door face - darker metal
+        love.graphics.setColor(0.25, 0.25, 0.28)
         love.graphics.circle("fill", vault.x, vault.y, vault_radius)
 
-        -- Draw inner ring detail
-        love.graphics.setColor(0.12, 0.1, 0.1)
+        -- Draw inner ring detail - darker still
+        love.graphics.setColor(0.18, 0.18, 0.22)
         love.graphics.setLineWidth(8)
         love.graphics.circle("line", vault.x, vault.y, vault_radius * 0.85)
         love.graphics.setLineWidth(1)
@@ -363,57 +346,41 @@ function draw_3d_vault()
             local bolt_x = vault.x + math.cos(angle) * vault_radius * 0.7
             local bolt_y = vault.y + math.sin(angle) * vault_radius * 0.7
 
-            -- Bolt base
-            love.graphics.setColor(0.3, 0.3, 0.3)
+            -- Bolt base - dark metal
+            love.graphics.setColor(0.35, 0.35, 0.4)
             love.graphics.circle("fill", bolt_x, bolt_y, 8)
 
-            -- Bolt highlight
-            love.graphics.setColor(0.4, 0.4, 0.4)
+            -- Bolt highlight - lighter metal
+            love.graphics.setColor(0.5, 0.5, 0.55)
             love.graphics.circle("fill", bolt_x, bolt_y, 5)
         end
 
         -- Draw handle/wheel in center (but not overlapping dial)
         local handle_radius = vault_radius * 0.5
-        love.graphics.setColor(0.6, 0.5, 0.1)
+        love.graphics.setColor(0.4, 0.4, 0.45)
         love.graphics.setLineWidth(4)
         love.graphics.circle("line", vault.x, vault.y, handle_radius)
-        love.graphics.setLineWidth(1)
-
-        -- Draw spokes from handle
-        for i = 1, 4 do
-            local angle = (i / 4) * math.pi * 2
-            local spoke_start = vault.radius * 1.4
-            local spoke_end = handle_radius
-            love.graphics.setColor(0.6, 0.5, 0.1)
-            love.graphics.setLineWidth(3)
-            love.graphics.line(
-                vault.x + math.cos(angle) * spoke_start,
-                vault.y + math.sin(angle) * spoke_start,
-                vault.x + math.cos(angle) * spoke_end,
-                vault.y + math.sin(angle) * spoke_end
-            )
-        end
         love.graphics.setLineWidth(1)
     end
 end
 
 function draw_dial()
-    -- Draw the outer ring - gold
-    love.graphics.setColor(0.8, 0.65, 0.1)
+    -- Draw the outer ring - dark metal
+    love.graphics.setColor(0.3, 0.3, 0.35)
     love.graphics.circle("fill", vault.x, vault.y, vault.radius * 1.15)
 
-    -- Draw the outer circle (dial) - Christmas red
-    love.graphics.setColor(0.7, 0.1, 0.1)
+    -- Draw the outer circle (dial) - dark gunmetal
+    love.graphics.setColor(0.2, 0.2, 0.25)
     love.graphics.circle("fill", vault.x, vault.y, vault.radius)
 
-    -- Draw the inner circle (center) - light grey
-    love.graphics.setColor(0.7, 0.7, 0.7)
+    -- Draw the inner circle (center) - brushed steel
+    love.graphics.setColor(0.6, 0.6, 0.65)
     love.graphics.circle("fill", vault.x, vault.y, vault.radius * 0.6)
 end
 
 function draw_tick_marks()
-    -- Gold tick marks
-    love.graphics.setColor(1, 0.84, 0)
+    -- White/silver tick marks
+    love.graphics.setColor(0.9, 0.9, 0.95)
     local totalValues = MAX_VALUE - MIN_VALUE + 1
     -- Calculate rotation offset based on current value (negative to rotate dial opposite to value)
     local rotationOffset = -(vault.value / totalValues) * math.pi * 2
@@ -434,7 +401,7 @@ function draw_tick_marks()
 end
 
 function draw_numbers()
-    -- White numbers with gold shadow for festive look
+    -- White numbers with subtle shadow
     love.graphics.setNewFont(12)
     local totalValues = MAX_VALUE - MIN_VALUE + 1
     -- Calculate rotation offset based on current value (negative to rotate dial opposite to value)
@@ -446,26 +413,45 @@ function draw_numbers()
         local x = vault.x + math.cos(angle) * numRadius
         local y = vault.y + math.sin(angle) * numRadius
 
-        -- Gold shadow
-        love.graphics.setColor(1, 0.84, 0, 0.5)
+        -- Dark shadow
+        love.graphics.setColor(0, 0, 0, 0.5)
         love.graphics.print(tostring(i), x - 7, y - 5)
         -- White text
-        love.graphics.setColor(1, 1, 1)
+        love.graphics.setColor(0.95, 0.95, 1)
         love.graphics.print(tostring(i), x - 8, y - 6)
     end
 end
 
 function draw_indicator()
-    -- Draw gold line from the top (indicator at 12 o'clock position)
-    love.graphics.setColor(1, 0.84, 0)
-    love.graphics.setLineWidth(3)
-    local topAngle = -math.pi / 2 -- Top position (12 o'clock)
-    local lineStart = vault.radius * 1.05
-    local lineEnd = vault.radius * 1.12
+    -- Draw 3D metallic indicator from the top (12 o'clock position)
+    local topAngle = -math.pi / 2
+    local lineStart = vault.radius * 0.95
+    local lineEnd = vault.radius * 1.25
+
+    -- Dark shadow/base layer (right side)
+    love.graphics.setColor(0.3, 0.3, 0.35)
+    love.graphics.setLineWidth(8)
+    love.graphics.line(vault.x + math.cos(topAngle) * lineStart + 1,
+        vault.y + math.sin(topAngle) * lineStart + 1,
+        vault.x + math.cos(topAngle) * lineEnd + 1,
+        vault.y + math.sin(topAngle) * lineEnd + 1)
+
+    -- Main metallic body
+    love.graphics.setColor(0.6, 0.6, 0.65)
+    love.graphics.setLineWidth(6)
     love.graphics.line(vault.x + math.cos(topAngle) * lineStart,
         vault.y + math.sin(topAngle) * lineStart,
         vault.x + math.cos(topAngle) * lineEnd,
         vault.y + math.sin(topAngle) * lineEnd)
+
+    -- Bright highlight (left side)
+    love.graphics.setColor(0.95, 0.95, 1, 0.8)
+    love.graphics.setLineWidth(2)
+    love.graphics.line(vault.x + math.cos(topAngle) * lineStart - 1.5,
+        vault.y + math.sin(topAngle) * lineStart - 1.5,
+        vault.x + math.cos(topAngle) * lineEnd - 1.5,
+        vault.y + math.sin(topAngle) * lineEnd - 1.5)
+
     love.graphics.setLineWidth(1)
 end
 
@@ -508,10 +494,14 @@ function love.draw()
         draw_dial()
         draw_tick_marks()
         draw_numbers()
-        draw_indicator()
     end
 
     draw_current_instruction()
+
+    -- Draw indicator last so it's on top
+    if not is_open then
+        draw_indicator()
+    end
 end
 
 -- Control the vault dial with arrow keys
