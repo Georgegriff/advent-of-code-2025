@@ -1,6 +1,8 @@
 io.stdout:setvbuf("no")
 local file_utils = require("utils.file")
 local m = require("part2")
+local Slider = require("ui.slider")
+local Toggle = require("ui.toggle")
 if arg[2] == "debug" then
     require("lldebugger").start()
 end
@@ -18,24 +20,37 @@ local current_instruction_idx = 1
 local use_test_input = true -- Toggle between test.txt and input.txt
 local debug_pause = false   -- Pause when complete instead of opening vault
 
--- Slider configuration
-local slider = {
+-- UI Components
+local speed_slider = Slider.create({
     x = 145,
     y = 100,
     width = 600,
     height = 20,
-    dragging = false
-}
+    min_value = 0,
+    max_value = MAX_SPEED,
+    initial_value = DEFAULT_SPEED,
+    exponential = true,
+    label = "Speed",
+    on_change = function(value)
+        SPEED = value
+    end
+})
 
--- Toggle switch configuration
-local toggle_switch = {
+local input_toggle = Toggle.create({
     x = 755,
     y = 95,
     width = 100,
     height = 35,
     knob_width = 45,
-    transition = 0 -- 0 to 1, animates the knob position
-}
+    initial_state = false, -- false = TEST, true = INPUT
+    label_off = "TEST",
+    label_on = "INPUT",
+    on_toggle = function(state)
+        use_test_input = not state
+        load_instructions()
+        reset_vault()
+    end
+})
 
 -- Snow particles for festive effect
 local snowflakes = {}
@@ -98,13 +113,8 @@ function love.update(dt)
         return
     end
 
-    -- Animate toggle switch transition
-    local target_transition = use_test_input and 0 or 1
-    if toggle_switch.transition < target_transition then
-        toggle_switch.transition = math.min(toggle_switch.transition + dt * 5, target_transition)
-    elseif toggle_switch.transition > target_transition then
-        toggle_switch.transition = math.max(toggle_switch.transition - dt * 5, target_transition)
-    end
+    -- Update UI components
+    Toggle.update(input_toggle, dt)
 
     -- Calculate how much to move this frame
     local movement_this_frame = SPEED * dt
@@ -441,86 +451,12 @@ function draw_current_instruction()
     end
 end
 
-function draw_slider()
-    -- Draw label - gold
-    love.graphics.setColor(1, 0.84, 0)
-    love.graphics.setNewFont(16)
-    love.graphics.print("Speed: " .. math.floor(SPEED), slider.x, slider.y - 25)
-
-    -- Draw slider track - dark green
-    love.graphics.setColor(0.1, 0.3, 0.1)
-    love.graphics.rectangle("fill", slider.x, slider.y, slider.width, slider.height)
-
-    -- Calculate slider position using exponential curve
-    -- Convert SPEED to slider position (0 to 1)
-    local slider_position = math.sqrt(SPEED / MAX_SPEED)
-    local fill_width = slider_position * slider.width
-
-    love.graphics.setColor(0.8, 0.1, 0.1)
-    love.graphics.rectangle("fill", slider.x, slider.y, fill_width, slider.height)
-
-    -- Draw slider handle - gold
-    local handle_x = slider.x + fill_width
-    love.graphics.setColor(1, 0.84, 0)
-    love.graphics.circle("fill", handle_x, slider.y + slider.height / 2, 10)
-end
-
-function draw_toggle_button()
-    -- Draw switch track (background)
-    local track_color = use_test_input and { 0.8, 0.6, 0.1 } or { 0.1, 0.5, 0.1 }
-    love.graphics.setColor(track_color[1], track_color[2], track_color[3], 0.5)
-    love.graphics.rectangle("fill", toggle_switch.x, toggle_switch.y, toggle_switch.width, toggle_switch.height,
-        toggle_switch.height / 2)
-
-    -- Draw gold border around track
-    love.graphics.setColor(1, 0.84, 0)
-    love.graphics.setLineWidth(2)
-    love.graphics.rectangle("line", toggle_switch.x, toggle_switch.y, toggle_switch.width, toggle_switch.height,
-        toggle_switch.height / 2)
-    love.graphics.setLineWidth(1)
-
-    -- Draw labels inside track
-    love.graphics.setNewFont(11)
-    -- TEST label on left
-    love.graphics.setColor(1, 1, 1, use_test_input and 0.4 or 0.8)
-    love.graphics.print("TEST", toggle_switch.x + 8, toggle_switch.y + 10)
-    -- INPUT label on right
-    love.graphics.setColor(1, 1, 1, use_test_input and 0.8 or 0.4)
-    love.graphics.print("INPUT", toggle_switch.x + toggle_switch.width - 38, toggle_switch.y + 10)
-
-    -- Calculate knob position
-    local knob_x = toggle_switch.x + toggle_switch.transition * (toggle_switch.width - toggle_switch.knob_width)
-    local knob_y = toggle_switch.y
-
-    -- Draw knob shadow
-    love.graphics.setColor(0, 0, 0, 0.3)
-    love.graphics.rectangle("fill", knob_x + 2, knob_y + 2, toggle_switch.knob_width, toggle_switch.height,
-        toggle_switch.height / 2)
-
-    -- Draw knob
-    love.graphics.setColor(1, 0.84, 0)
-    love.graphics.rectangle("fill", knob_x, knob_y, toggle_switch.knob_width, toggle_switch.height,
-        toggle_switch.height / 2)
-
-    -- Draw knob highlight
-    love.graphics.setColor(1, 1, 0.6, 0.5)
-    love.graphics.rectangle("fill", knob_x + 3, knob_y + 3, toggle_switch.knob_width - 6, toggle_switch.height / 2 - 3,
-        toggle_switch.height / 4)
-
-    -- Draw active text on knob
-    love.graphics.setNewFont(12)
-    local knob_text = use_test_input and "TEST" or "INPUT"
-    local text_width = love.graphics.getFont():getWidth(knob_text)
-    love.graphics.setColor(0.1, 0.1, 0.1)
-    love.graphics.print(knob_text, knob_x + (toggle_switch.knob_width - text_width) / 2, knob_y + 9)
-end
-
 function love.draw()
     draw_background()
     draw_snow()
     draw_title()
-    draw_slider()
-    draw_toggle_button()
+    Slider.draw(speed_slider)
+    Toggle.draw(input_toggle)
     draw_3d_vault()
 
     -- Only draw dial and related elements if vault is not open
@@ -545,46 +481,31 @@ function love.keypressed(key)
         vault.progress = 0
         current_instruction_idx = 1
         SPEED = DEFAULT_SPEED
-        slider.dragging = false
+        speed_slider.value = DEFAULT_SPEED
+        speed_slider.dragging = false
     end
 end
 
 function love.mousepressed(x, y, button)
     if button == 1 then
-        -- Check if click is on toggle switch
-        if x >= toggle_switch.x and x <= toggle_switch.x + toggle_switch.width and
-            y >= toggle_switch.y and y <= toggle_switch.y + toggle_switch.height then
-            use_test_input = not use_test_input
-            load_instructions()
-            reset_vault()
+        -- Check UI components
+        if Toggle.mouse_pressed(input_toggle, x, y) then
             return
         end
-
-        -- Check if click is on slider
-        if x >= slider.x and x <= slider.x + slider.width and
-            y >= slider.y and y <= slider.y + slider.height then
-            slider.dragging = true
-            -- Update speed immediately using exponential curve
-            local relative_x = math.max(0, math.min(x - slider.x, slider.width))
-            local slider_position = relative_x / slider.width
-            SPEED = (slider_position * slider_position) * MAX_SPEED
+        if Slider.mouse_pressed(speed_slider, x, y) then
+            return
         end
     end
 end
 
 function love.mousereleased(x, y, button)
     if button == 1 then
-        slider.dragging = false
+        Slider.mouse_released(speed_slider)
     end
 end
 
 function love.mousemoved(x, y, dx, dy)
-    if slider.dragging then
-        -- Update speed using exponential curve (x^2) for better control at low speeds
-        local relative_x = math.max(0, math.min(x - slider.x, slider.width))
-        local slider_position = relative_x / slider.width
-        SPEED = (slider_position * slider_position) * MAX_SPEED
-    end
+    Slider.mouse_moved(speed_slider, x)
 end
 
 local M = {}
