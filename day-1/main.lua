@@ -5,11 +5,11 @@ if arg[2] == "debug" then
     require("lldebugger").start()
 end
 
--- Safe dial configuration
+-- Vault dial configuration
 MIN_VALUE = 0
 MAX_VALUE = 99
 START_VALUE = 50
-DEFAULT_SPEED = 50
+DEFAULT_SPEED = 10
 SPEED = DEFAULT_SPEED
 MAX_SPEED = 100000
 ---@class Instruction[]
@@ -19,7 +19,7 @@ local use_test_input = true -- Toggle between test.txt and input.txt
 
 -- Slider configuration
 local slider = {
-    x = 50,
+    x = 145,
     y = 100,
     width = 600,
     height = 20,
@@ -28,7 +28,7 @@ local slider = {
 
 -- Toggle button configuration
 local toggle_button = {
-    x = 670,
+    x = 755,
     y = 95,
     width = 100,
     height = 30
@@ -38,7 +38,7 @@ local toggle_button = {
 local snowflakes = {}
 for i = 1, 100 do
     table.insert(snowflakes, {
-        x = math.random(0, 800),
+        x = math.random(0, 1000),
         y = math.random(0, 600),
         speed = math.random(10, 30),
         size = math.random(2, 5)
@@ -54,11 +54,11 @@ function load_instructions()
     end)
 end
 
-function reset_safe()
-    safe = {
-        x = 400,
+function reset_vault()
+    vault = {
+        x = 500,
         y = 300,
-        radius = 100,
+        radius = 80,
         value = START_VALUE,
         target_value = START_VALUE,
         logical_value = START_VALUE,
@@ -69,12 +69,15 @@ function reset_safe()
 end
 
 function love.load()
+    -- Set window size to accommodate opened vault door
+    love.window.setMode(1000, 600, { resizable = false })
+
     -- Enable antialiasing
     love.graphics.setLineStyle("smooth")
     love.graphics.setLineJoin("bevel")
 
     load_instructions()
-    reset_safe()
+    reset_vault()
 end
 
 function love.update(dt)
@@ -88,7 +91,7 @@ function love.update(dt)
     end
 
     -- Update progress
-    safe.progress = safe.progress + SPEED * dt
+    vault.progress = vault.progress + SPEED * dt
 
     -- Process multiple instructions per frame if needed
     while current_instruction_idx <= #instructions do
@@ -96,19 +99,20 @@ function love.update(dt)
         local current_instruction = instructions[current_instruction_idx]
 
         -- Calculate target value and zero crossings using follow_instruction
-        local target, zero_crossings = m.follow_instruction(safe.logical_value, current_instruction, MIN_VALUE, MAX_VALUE)
-        safe.target_value = target
+        local target, zero_crossings = m.follow_instruction(vault.logical_value, current_instruction, MIN_VALUE,
+            MAX_VALUE)
+        vault.target_value = target
 
         -- Check if we've completed this instruction
-        if safe.progress >= current_instruction.amount then
+        if vault.progress >= current_instruction.amount then
             -- Move to next instruction and add zero crossings from this instruction
-            safe.logical_value = safe.target_value
-            safe.zero_crossings = safe.zero_crossings + zero_crossings
+            vault.logical_value = vault.target_value
+            vault.zero_crossings = vault.zero_crossings + zero_crossings
             -- Also count if we land on zero
-            if safe.target_value == 0 then
-                safe.zero_crossings = safe.zero_crossings + 1
+            if vault.target_value == 0 then
+                vault.zero_crossings = vault.zero_crossings + 1
             end
-            safe.progress = safe.progress - current_instruction.amount
+            vault.progress = vault.progress - current_instruction.amount
             current_instruction_idx = current_instruction_idx + 1
         else
             -- Still working on this instruction
@@ -119,11 +123,11 @@ function love.update(dt)
     -- Update visual value (animate progress from logical_value to target_value)
     if current_instruction_idx <= #instructions then
         local current_instruction = instructions[current_instruction_idx]
-        local progress_fraction = math.min(safe.progress / current_instruction.amount, 1)
-        safe.value = safe.logical_value + (safe.target_value - safe.logical_value) * progress_fraction
+        local progress_fraction = math.min(vault.progress / current_instruction.amount, 1)
+        vault.value = vault.logical_value + (vault.target_value - vault.logical_value) * progress_fraction
     else
         -- All done, snap to final value
-        safe.value = safe.logical_value
+        vault.value = vault.logical_value
     end
 end
 
@@ -144,9 +148,9 @@ function draw_christmas_stars()
     local time = love.timer.getTime()
     for i = 1, 8 do
         local angle = (i / 8) * math.pi * 2
-        local distance = safe.radius * 1.4
-        local x = safe.x + math.cos(angle) * distance
-        local y = safe.y + math.sin(angle) * distance
+        local distance = vault.radius * 1.4
+        local x = vault.x + math.cos(angle) * distance
+        local y = vault.y + math.sin(angle) * distance
         local pulse = 0.5 + 0.5 * math.sin(time * 3 + i)
 
         -- Draw gold star
@@ -159,7 +163,7 @@ end
 
 function draw_title()
     love.graphics.setNewFont(24)
-    local title = "Day 1 - Part 2"
+    local title = "Day 1: Secret Entrance"
     local screenWidth = love.graphics.getWidth()
     local titleWidth = love.graphics.getFont():getWidth(title)
     local x = (screenWidth - titleWidth) / 2
@@ -173,18 +177,132 @@ function draw_title()
     love.graphics.print(title, x, y)
 end
 
+function draw_3d_vault()
+    local vault_radius = 150
+    local is_open = current_instruction_idx > #instructions
+
+    if is_open then
+        -- Draw open vault - interior circular opening
+        love.graphics.setColor(0.05, 0.03, 0.03)
+        love.graphics.circle("fill", vault.x, vault.y, vault_radius * 0.9)
+
+        -- Draw interior ring detail
+        love.graphics.setColor(0.1, 0.08, 0.08)
+        love.graphics.setLineWidth(10)
+        love.graphics.circle("line", vault.x, vault.y, vault_radius * 0.85)
+        love.graphics.setLineWidth(1)
+
+        -- Draw open circular door to the left (hinged at vault edge)
+        local door_x = vault.x - vault_radius - vault_radius - 10
+        local door_y = vault.y
+
+        -- Draw door 3D edge (circular)
+        love.graphics.setColor(0.12, 0.1, 0.1)
+        love.graphics.circle("fill", door_x + 10, door_y, vault_radius)
+
+        -- Draw door face (circular vault door)
+        love.graphics.setColor(0.15, 0.12, 0.12)
+        love.graphics.circle("fill", door_x, door_y, vault_radius)
+
+        -- Draw outer ring
+        love.graphics.setColor(0.25, 0.22, 0.22)
+        love.graphics.setLineWidth(15)
+        love.graphics.circle("line", door_x, door_y, vault_radius * 0.95)
+        love.graphics.setLineWidth(1)
+
+        -- Draw locking bolts around door
+        for i = 1, 8 do
+            local angle = (i / 8) * math.pi * 2
+            local bolt_x = door_x + math.cos(angle) * vault_radius * 0.7
+            local bolt_y = door_y + math.sin(angle) * vault_radius * 0.7
+            love.graphics.setColor(0.3, 0.3, 0.3)
+            love.graphics.circle("fill", bolt_x, bolt_y, 8)
+            love.graphics.setColor(0.4, 0.4, 0.4)
+            love.graphics.circle("fill", bolt_x, bolt_y, 5)
+        end
+
+        -- Draw hinges connecting door to vault frame
+        love.graphics.setColor(0.2, 0.2, 0.2)
+        love.graphics.rectangle("fill", vault.x - vault_radius - 10, door_y - 40, 20, 25)
+        love.graphics.rectangle("fill", vault.x - vault_radius - 10, door_y + 20, 20, 25)
+
+        -- Draw vault frame (circular opening)
+        love.graphics.setColor(0.2, 0.18, 0.18)
+        love.graphics.setLineWidth(12)
+        love.graphics.circle("line", vault.x, vault.y, vault_radius)
+        love.graphics.setLineWidth(1)
+    else
+        -- Draw closed vault door
+        -- Draw outer vault ring (3D effect)
+        love.graphics.setColor(0.2, 0.18, 0.18)
+        love.graphics.circle("fill", vault.x + 3, vault.y + 3, vault_radius + 10)
+
+        -- Draw main outer ring
+        love.graphics.setColor(0.25, 0.22, 0.22)
+        love.graphics.circle("fill", vault.x, vault.y, vault_radius + 10)
+
+        -- Draw main vault door face
+        love.graphics.setColor(0.15, 0.12, 0.12)
+        love.graphics.circle("fill", vault.x, vault.y, vault_radius)
+
+        -- Draw inner ring detail
+        love.graphics.setColor(0.12, 0.1, 0.1)
+        love.graphics.setLineWidth(8)
+        love.graphics.circle("line", vault.x, vault.y, vault_radius * 0.85)
+        love.graphics.setLineWidth(1)
+
+        -- Draw locking bolts around the door (8 positions)
+        for i = 1, 8 do
+            local angle = (i / 8) * math.pi * 2
+            local bolt_x = vault.x + math.cos(angle) * vault_radius * 0.7
+            local bolt_y = vault.y + math.sin(angle) * vault_radius * 0.7
+
+            -- Bolt base
+            love.graphics.setColor(0.3, 0.3, 0.3)
+            love.graphics.circle("fill", bolt_x, bolt_y, 8)
+
+            -- Bolt highlight
+            love.graphics.setColor(0.4, 0.4, 0.4)
+            love.graphics.circle("fill", bolt_x, bolt_y, 5)
+        end
+
+        -- Draw handle/wheel in center (but not overlapping dial)
+        local handle_radius = vault_radius * 0.5
+        love.graphics.setColor(0.6, 0.5, 0.1)
+        love.graphics.setLineWidth(4)
+        love.graphics.circle("line", vault.x, vault.y, handle_radius)
+        love.graphics.setLineWidth(1)
+
+        -- Draw spokes from handle
+        for i = 1, 4 do
+            local angle = (i / 4) * math.pi * 2
+            local spoke_start = vault.radius * 1.4
+            local spoke_end = handle_radius
+            love.graphics.setColor(0.6, 0.5, 0.1)
+            love.graphics.setLineWidth(3)
+            love.graphics.line(
+                vault.x + math.cos(angle) * spoke_start,
+                vault.y + math.sin(angle) * spoke_start,
+                vault.x + math.cos(angle) * spoke_end,
+                vault.y + math.sin(angle) * spoke_end
+            )
+        end
+        love.graphics.setLineWidth(1)
+    end
+end
+
 function draw_dial()
     -- Draw the outer ring - gold
     love.graphics.setColor(0.8, 0.65, 0.1)
-    love.graphics.circle("fill", safe.x, safe.y, safe.radius * 1.15)
+    love.graphics.circle("fill", vault.x, vault.y, vault.radius * 1.15)
 
     -- Draw the outer circle (dial) - Christmas red
     love.graphics.setColor(0.7, 0.1, 0.1)
-    love.graphics.circle("fill", safe.x, safe.y, safe.radius)
+    love.graphics.circle("fill", vault.x, vault.y, vault.radius)
 
-    -- Draw the inner circle (center) - dark Christmas green
-    love.graphics.setColor(0.1, 0.3, 0.1)
-    love.graphics.circle("fill", safe.x, safe.y, safe.radius * 0.6)
+    -- Draw the inner circle (center) - light grey
+    love.graphics.setColor(0.7, 0.7, 0.7)
+    love.graphics.circle("fill", vault.x, vault.y, vault.radius * 0.6)
 end
 
 function draw_tick_marks()
@@ -192,18 +310,18 @@ function draw_tick_marks()
     love.graphics.setColor(1, 0.84, 0)
     local totalValues = MAX_VALUE - MIN_VALUE + 1
     -- Calculate rotation offset based on current value
-    local rotationOffset = -(safe.value / totalValues) * math.pi * 2
+    local rotationOffset = -(vault.value / totalValues) * math.pi * 2
 
     for i = MIN_VALUE, MAX_VALUE do
         local angle = (i / totalValues) * math.pi * 2 - math.pi / 2 + rotationOffset
         local isMainTick = (i % 10 == 0)
-        local tickStart = isMainTick and safe.radius * 0.85 or safe.radius * 0.9
-        local tickEnd = safe.radius * 0.95
+        local tickStart = isMainTick and vault.radius * 0.85 or vault.radius * 0.9
+        local tickEnd = vault.radius * 0.95
 
-        local x1 = safe.x + math.cos(angle) * tickStart
-        local y1 = safe.y + math.sin(angle) * tickStart
-        local x2 = safe.x + math.cos(angle) * tickEnd
-        local y2 = safe.y + math.sin(angle) * tickEnd
+        local x1 = vault.x + math.cos(angle) * tickStart
+        local y1 = vault.y + math.sin(angle) * tickStart
+        local x2 = vault.x + math.cos(angle) * tickEnd
+        local y2 = vault.y + math.sin(angle) * tickEnd
 
         love.graphics.line(x1, y1, x2, y2)
     end
@@ -214,13 +332,13 @@ function draw_numbers()
     love.graphics.setNewFont(12)
     local totalValues = MAX_VALUE - MIN_VALUE + 1
     -- Calculate rotation offset based on current value
-    local rotationOffset = -(safe.value / totalValues) * math.pi * 2
+    local rotationOffset = -(vault.value / totalValues) * math.pi * 2
 
     for i = MIN_VALUE, MAX_VALUE, 10 do
         local angle = (i / totalValues) * math.pi * 2 - math.pi / 2 + rotationOffset
-        local numRadius = safe.radius * 0.75
-        local x = safe.x + math.cos(angle) * numRadius
-        local y = safe.y + math.sin(angle) * numRadius
+        local numRadius = vault.radius * 0.75
+        local x = vault.x + math.cos(angle) * numRadius
+        local y = vault.y + math.sin(angle) * numRadius
 
         -- Gold shadow
         love.graphics.setColor(1, 0.84, 0, 0.5)
@@ -236,33 +354,37 @@ function draw_indicator()
     love.graphics.setColor(1, 0.84, 0)
     love.graphics.setLineWidth(3)
     local topAngle = -math.pi / 2 -- Top position (12 o'clock)
-    local lineStart = safe.radius * 1.05
-    local lineEnd = safe.radius * 1.12
-    love.graphics.line(safe.x + math.cos(topAngle) * lineStart,
-        safe.y + math.sin(topAngle) * lineStart,
-        safe.x + math.cos(topAngle) * lineEnd,
-        safe.y + math.sin(topAngle) * lineEnd)
+    local lineStart = vault.radius * 1.05
+    local lineEnd = vault.radius * 1.12
+    love.graphics.line(vault.x + math.cos(topAngle) * lineStart,
+        vault.y + math.sin(topAngle) * lineStart,
+        vault.x + math.cos(topAngle) * lineEnd,
+        vault.y + math.sin(topAngle) * lineEnd)
     love.graphics.setLineWidth(1)
 end
 
 function draw_current_instruction()
     local screenHeight = love.graphics.getHeight()
-    love.graphics.setNewFont(20)
-    if current_instruction_idx <= #instructions then
-        local current_instruction = instructions[current_instruction_idx]
-        -- Command in Christmas red
-        love.graphics.setColor(0.9, 0.2, 0.2)
-        love.graphics.print("Command: " .. current_instruction.command, 50, screenHeight - 80)
-        -- Zero crossings in gold
+
+    if current_instruction_idx > #instructions then
+        -- Vault is open - show solution inside the vault
+        love.graphics.setNewFont(28)
         love.graphics.setColor(1, 0.84, 0)
-        love.graphics.print("Zero Crossings: " .. safe.zero_crossings, 50, screenHeight - 50)
-    else
-        -- Completion message in bright green
+        local solution_text = "Solution"
+        local solution_width = love.graphics.getFont():getWidth(solution_text)
+        love.graphics.print(solution_text, vault.x - solution_width / 2, vault.y - 30)
+
+        -- Number below
+        love.graphics.setNewFont(48)
+        local number_text = tostring(vault.zero_crossings)
+        local number_width = love.graphics.getFont():getWidth(number_text)
+        love.graphics.setColor(1, 1, 1)
+        love.graphics.print(number_text, vault.x - number_width / 2, vault.y + 5)
+
+        -- Completion message at bottom in bright green
+        love.graphics.setNewFont(20)
         love.graphics.setColor(0.2, 0.9, 0.2)
-        love.graphics.print("All instructions complete!", 50, screenHeight - 80)
-        -- Zero crossings in gold
-        love.graphics.setColor(1, 0.84, 0)
-        love.graphics.print("Zero Crossings: " .. safe.zero_crossings, 50, screenHeight - 50)
+        love.graphics.print("Vault opened", 50, screenHeight - 50)
     end
 end
 
@@ -316,21 +438,27 @@ function love.draw()
     draw_title()
     draw_slider()
     draw_toggle_button()
-    draw_dial()
-    draw_tick_marks()
-    draw_numbers()
-    draw_indicator()
+    draw_3d_vault()
+
+    -- Only draw dial and related elements if vault is not open
+    if current_instruction_idx <= #instructions then
+        draw_dial()
+        draw_tick_marks()
+        draw_numbers()
+        draw_indicator()
+    end
+
     draw_current_instruction()
 end
 
--- Control the safe dial with arrow keys
+-- Control the vault dial with arrow keys
 function love.keypressed(key)
     if key == "r" then
-        safe.value = START_VALUE
-        safe.target_value = START_VALUE
-        safe.logical_value = START_VALUE
-        safe.zero_crossings = 0
-        safe.progress = 0
+        vault.value = START_VALUE
+        vault.target_value = START_VALUE
+        vault.logical_value = START_VALUE
+        vault.zero_crossings = 0
+        vault.progress = 0
         current_instruction_idx = 1
         SPEED = DEFAULT_SPEED
         slider.dragging = false
@@ -344,7 +472,7 @@ function love.mousepressed(x, y, button)
             y >= toggle_button.y and y <= toggle_button.y + toggle_button.height then
             use_test_input = not use_test_input
             load_instructions()
-            reset_safe()
+            reset_vault()
             return
         end
 
