@@ -9,12 +9,13 @@ end
 MIN_VALUE = 0
 MAX_VALUE = 99
 START_VALUE = 50
-DEFAULT_SPEED = 5000
+DEFAULT_SPEED = 50
 SPEED = DEFAULT_SPEED
 MAX_SPEED = 100000
 ---@class Instruction[]
 local instructions = {}
 local current_instruction_idx = 1
+local use_test_input = true -- Toggle between test.txt and input.txt
 
 -- Slider configuration
 local slider = {
@@ -25,19 +26,35 @@ local slider = {
     dragging = false
 }
 
-function love.load()
-    -- Enable antialiasing
-    love.graphics.setLineStyle("smooth")
-    love.graphics.setLineJoin("bevel")
-    local input_file = "./inputs/input.txt"
+-- Toggle button configuration
+local toggle_button = {
+    x = 670,
+    y = 95,
+    width = 100,
+    height = 30
+}
 
+-- Snow particles for festive effect
+local snowflakes = {}
+for i = 1, 100 do
+    table.insert(snowflakes, {
+        x = math.random(0, 800),
+        y = math.random(0, 600),
+        speed = math.random(10, 30),
+        size = math.random(2, 5)
+    })
+end
+
+function load_instructions()
+    instructions = {}
+    local input_file = use_test_input and "./inputs/test.txt" or "./inputs/input.txt"
     file_utils.read_file_lines(input_file, function(line)
         local instruction = m.parse_instruction(line)
         table.insert(instructions, instruction)
     end)
+end
 
-
-    -- Safe dial properties
+function reset_safe()
     safe = {
         x = 400,
         y = 300,
@@ -48,9 +65,28 @@ function love.load()
         zero_crossings = 0,
         progress = 0 -- Animation progress (0 to instruction.amount)
     }
+    current_instruction_idx = 1
+end
+
+function love.load()
+    -- Enable antialiasing
+    love.graphics.setLineStyle("smooth")
+    love.graphics.setLineJoin("bevel")
+
+    load_instructions()
+    reset_safe()
 end
 
 function love.update(dt)
+    -- Update snow
+    for _, flake in ipairs(snowflakes) do
+        flake.y = flake.y + flake.speed * dt
+        if flake.y > love.graphics.getHeight() then
+            flake.y = -10
+            flake.x = math.random(0, love.graphics.getWidth())
+        end
+    end
+
     -- Update progress
     safe.progress = safe.progress + SPEED * dt
 
@@ -92,34 +128,68 @@ function love.update(dt)
 end
 
 function draw_background()
-    love.graphics.clear(0, 0, 0)
+    -- Dark Christmas green background
+    love.graphics.clear(0.05, 0.15, 0.1)
+end
+
+function draw_snow()
+    love.graphics.setColor(1, 1, 1, 0.8)
+    for _, flake in ipairs(snowflakes) do
+        love.graphics.circle("fill", flake.x, flake.y, flake.size)
+    end
+end
+
+function draw_christmas_stars()
+    -- Draw decorative stars around the dial
+    local time = love.timer.getTime()
+    for i = 1, 8 do
+        local angle = (i / 8) * math.pi * 2
+        local distance = safe.radius * 1.4
+        local x = safe.x + math.cos(angle) * distance
+        local y = safe.y + math.sin(angle) * distance
+        local pulse = 0.5 + 0.5 * math.sin(time * 3 + i)
+
+        -- Draw gold star
+        love.graphics.setColor(1, 0.84, 0, 0.3 + pulse * 0.4)
+        love.graphics.circle("fill", x, y, 4 + pulse * 2)
+        love.graphics.setColor(1, 1, 1, 0.5 + pulse * 0.5)
+        love.graphics.circle("fill", x, y, 2)
+    end
 end
 
 function draw_title()
-    love.graphics.setColor(1, 1, 1)
     love.graphics.setNewFont(24)
     local title = "Day 1 - Part 2"
     local screenWidth = love.graphics.getWidth()
     local titleWidth = love.graphics.getFont():getWidth(title)
-    love.graphics.print(title, (screenWidth - titleWidth) / 2, 30)
+    local x = (screenWidth - titleWidth) / 2
+    local y = 30
+
+    -- Red shadow for festive depth
+    love.graphics.setColor(0.7, 0.1, 0.1)
+    love.graphics.print(title, x + 2, y + 2)
+    -- Gold/yellow Christmas color
+    love.graphics.setColor(1, 0.84, 0)
+    love.graphics.print(title, x, y)
 end
 
 function draw_dial()
-    -- Draw the outer ring
-    love.graphics.setColor(0.5, 0.5, 0.5) -- medium gray
+    -- Draw the outer ring - gold
+    love.graphics.setColor(0.8, 0.65, 0.1)
     love.graphics.circle("fill", safe.x, safe.y, safe.radius * 1.15)
 
-    -- Draw the outer circle (dial)
-    love.graphics.setColor(0.3, 0.3, 0.3) -- dark gray
+    -- Draw the outer circle (dial) - Christmas red
+    love.graphics.setColor(0.7, 0.1, 0.1)
     love.graphics.circle("fill", safe.x, safe.y, safe.radius)
 
-    -- Draw the inner circle (center)
-    love.graphics.setColor(0.2, 0.2, 0.2) -- darker gray
+    -- Draw the inner circle (center) - dark Christmas green
+    love.graphics.setColor(0.1, 0.3, 0.1)
     love.graphics.circle("fill", safe.x, safe.y, safe.radius * 0.6)
 end
 
 function draw_tick_marks()
-    love.graphics.setColor(1, 1, 1) -- white
+    -- Gold tick marks
+    love.graphics.setColor(1, 0.84, 0)
     local totalValues = MAX_VALUE - MIN_VALUE + 1
     -- Calculate rotation offset based on current value
     local rotationOffset = -(safe.value / totalValues) * math.pi * 2
@@ -140,7 +210,7 @@ function draw_tick_marks()
 end
 
 function draw_numbers()
-    love.graphics.setColor(1, 1, 1)
+    -- White numbers with gold shadow for festive look
     love.graphics.setNewFont(12)
     local totalValues = MAX_VALUE - MIN_VALUE + 1
     -- Calculate rotation offset based on current value
@@ -152,15 +222,20 @@ function draw_numbers()
         local x = safe.x + math.cos(angle) * numRadius
         local y = safe.y + math.sin(angle) * numRadius
 
+        -- Gold shadow
+        love.graphics.setColor(1, 0.84, 0, 0.5)
+        love.graphics.print(tostring(i), x - 7, y - 5)
+        -- White text
+        love.graphics.setColor(1, 1, 1)
         love.graphics.print(tostring(i), x - 8, y - 6)
     end
 end
 
 function draw_indicator()
-    -- Draw white line from the top (indicator at 12 o'clock position)
-    love.graphics.setColor(1, 1, 1) -- white
+    -- Draw gold line from the top (indicator at 12 o'clock position)
+    love.graphics.setColor(1, 0.84, 0)
     love.graphics.setLineWidth(3)
-    local topAngle = -math.pi / 2   -- Top position (12 o'clock)
+    local topAngle = -math.pi / 2 -- Top position (12 o'clock)
     local lineStart = safe.radius * 1.05
     local lineEnd = safe.radius * 1.12
     love.graphics.line(safe.x + math.cos(topAngle) * lineStart,
@@ -172,45 +247,75 @@ end
 
 function draw_current_instruction()
     local screenHeight = love.graphics.getHeight()
+    love.graphics.setNewFont(20)
     if current_instruction_idx <= #instructions then
         local current_instruction = instructions[current_instruction_idx]
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.setNewFont(20)
+        -- Command in Christmas red
+        love.graphics.setColor(0.9, 0.2, 0.2)
         love.graphics.print("Command: " .. current_instruction.command, 50, screenHeight - 80)
+        -- Zero crossings in gold
+        love.graphics.setColor(1, 0.84, 0)
         love.graphics.print("Zero Crossings: " .. safe.zero_crossings, 50, screenHeight - 50)
     else
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.setNewFont(20)
+        -- Completion message in bright green
+        love.graphics.setColor(0.2, 0.9, 0.2)
         love.graphics.print("All instructions complete!", 50, screenHeight - 80)
+        -- Zero crossings in gold
+        love.graphics.setColor(1, 0.84, 0)
         love.graphics.print("Zero Crossings: " .. safe.zero_crossings, 50, screenHeight - 50)
     end
 end
 
 function draw_slider()
-    -- Draw label
-    love.graphics.setColor(1, 1, 1)
+    -- Draw label - gold
+    love.graphics.setColor(1, 0.84, 0)
     love.graphics.setNewFont(16)
     love.graphics.print("Speed: " .. math.floor(SPEED), slider.x, slider.y - 25)
 
-    -- Draw slider track
-    love.graphics.setColor(0.4, 0.4, 0.4)
+    -- Draw slider track - dark green
+    love.graphics.setColor(0.1, 0.3, 0.1)
     love.graphics.rectangle("fill", slider.x, slider.y, slider.width, slider.height)
 
-    -- Draw slider fill
+    -- Draw slider fill - Christmas red
     local fill_width = (SPEED / MAX_SPEED) * slider.width
-    love.graphics.setColor(0.2, 0.6, 1)
+    love.graphics.setColor(0.8, 0.1, 0.1)
     love.graphics.rectangle("fill", slider.x, slider.y, fill_width, slider.height)
 
-    -- Draw slider handle
+    -- Draw slider handle - gold
     local handle_x = slider.x + fill_width
-    love.graphics.setColor(1, 1, 1)
+    love.graphics.setColor(1, 0.84, 0)
     love.graphics.circle("fill", handle_x, slider.y + slider.height / 2, 10)
+end
+
+function draw_toggle_button()
+    -- Draw button background
+    if use_test_input then
+        love.graphics.setColor(0.8, 0.6, 0.1) -- Gold when test
+    else
+        love.graphics.setColor(0.1, 0.3, 0.1) -- Dark green when input
+    end
+    love.graphics.rectangle("fill", toggle_button.x, toggle_button.y, toggle_button.width, toggle_button.height, 5, 5)
+
+    -- Draw button border - gold
+    love.graphics.setColor(1, 0.84, 0)
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", toggle_button.x, toggle_button.y, toggle_button.width, toggle_button.height, 5, 5)
+    love.graphics.setLineWidth(1)
+
+    -- Draw button text
+    love.graphics.setNewFont(14)
+    local text = use_test_input and "TEST" or "INPUT"
+    local text_width = love.graphics.getFont():getWidth(text)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.print(text, toggle_button.x + (toggle_button.width - text_width) / 2, toggle_button.y + 8)
 end
 
 function love.draw()
     draw_background()
+    draw_snow()
     draw_title()
     draw_slider()
+    draw_toggle_button()
     draw_dial()
     draw_tick_marks()
     draw_numbers()
@@ -234,6 +339,15 @@ end
 
 function love.mousepressed(x, y, button)
     if button == 1 then
+        -- Check if click is on toggle button
+        if x >= toggle_button.x and x <= toggle_button.x + toggle_button.width and
+            y >= toggle_button.y and y <= toggle_button.y + toggle_button.height then
+            use_test_input = not use_test_input
+            load_instructions()
+            reset_safe()
+            return
+        end
+
         -- Check if click is on slider
         if x >= slider.x and x <= slider.x + slider.width and
             y >= slider.y and y <= slider.y + slider.height then
