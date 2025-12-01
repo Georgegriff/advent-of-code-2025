@@ -6,3 +6,6 @@ luarocks install busted
 
 `busted` to run specs https://lunarmodules.github.io/busted/#overview
 Or run vscode task `Busted Watch`
+
+To run visualization:
+`love .` in the appropriate folder

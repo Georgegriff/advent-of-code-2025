@@ -3,6 +3,7 @@
     { "path": "." },
     { "path": "template" },
     { "path": "practice" },
-    { "path": "day-1" }
+    { "path": "day-01" },
+    { "path": "day-02" }
   ]
 }
