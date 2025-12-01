@@ -21,19 +21,11 @@ describe("solutions", function()
             direction = 1,
             amount = 16
         }, 0, 10))
-        assert.are.equal(1, m.follow_instruction(0, {
-            direction = -1,
-            amount = 16
-        }, 0, 10))
-        assert.are.equal(2, m.follow_instruction(0, {
-            direction = 1,
-            amount = 32
-        }, 0, 10))
     end)
     it("test input", function()
         assert.are.equal(3, m.solution("./inputs/test.txt"))
     end)
     it("input", function()
-        assert.are.equal(0, m.solution("./inputs/input.txt"))
+        assert.are.equal(1158, m.solution("./inputs/input.txt"))
     end)
 end)

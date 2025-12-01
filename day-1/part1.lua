@@ -19,7 +19,7 @@ function M.solution(input_file)
         -- print(string.format("instruction: %s, new_position: %s", line, current_position))
         if (current_position == 0) then
             number_of_zeroes = number_of_zeroes + 1
-            print(string.format("zero found: %s", number_of_zeroes))
+            -- print(string.format("zero found: %s", number_of_zeroes))
         end
     end)
 
