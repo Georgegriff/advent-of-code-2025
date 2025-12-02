@@ -12,7 +12,8 @@ end
 
 if script_utils.is_main() and not love then
     local input_file = arg[1] or "./inputs/test.txt"
-    M.solution(input_file)
+    local solution = M.solution(input_file)
+    print(string.format("The answer is: %s", solution))
 end
 
 return M

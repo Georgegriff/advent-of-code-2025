@@ -9,3 +9,6 @@ Or run vscode task `Busted Watch`
 
 To run visualization:
 `love .` in the appropriate folder
+
+To run:
+lua part2.lua ./inputs/input.txt
