@@ -102,7 +102,7 @@ function M.follow_instruction(current_position, instruction, min_location, max_l
     end
 end
 
-if script_utils.is_main() and not love then
+if script_utils.should_run_main() then
     local input_file = arg[1] or "./inputs/test.txt"
     M.solution(input_file)
 end
