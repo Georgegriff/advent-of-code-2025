@@ -236,6 +236,25 @@ function draw_trash_can()
     local handle_x = lid_width / 2 - 10
     love.graphics.rectangle("fill", handle_x, -15, 20, 10, 5, 5)
 
+    -- Draw Santa hat on the lid
+    local hat_x = lid_width / 2
+    local hat_y = -lid_height / 2 - 5
+
+    -- Red cone of hat
+    love.graphics.setColor(0.9, 0.1, 0.1)
+    love.graphics.polygon("fill",
+        hat_x, hat_y - 25, -- tip
+        hat_x - 12, hat_y, -- bottom left
+        hat_x + 12, hat_y  -- bottom right
+    )
+
+    -- White trim at bottom
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.rectangle("fill", hat_x - 13, hat_y - 3, 26, 3)
+
+    -- White pom-pom at top
+    love.graphics.circle("fill", hat_x, hat_y - 26, 4)
+
     love.graphics.pop()
 
     -- Draw label below trash can
