@@ -4,6 +4,15 @@
     {
       "type": "lua-local",
       "request": "launch",
+      "name": "Debug Busted Tests",
+      "program": {
+        "command": "busted"
+      },
+      "cwd": "${workspaceFolder}"
+    },
+    {
+      "type": "lua-local",
+      "request": "launch",
       "name": "Debug Love",
       "program": {
         "command": "love"
