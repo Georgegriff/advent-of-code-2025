@@ -15,9 +15,9 @@ WINDOW_WIDTH = 1000
 WINDOW_HEIGHT = 600
 
 -- Processing configuration
-DEFAULT_SPEED = 60
+DEFAULT_SPEED = 20
 SPEED = DEFAULT_SPEED
-MAX_SPEED = 200000
+MAX_SPEED = 1000000
 
 ---@class Range[]
 local ranges = {}
@@ -117,15 +117,14 @@ function love.update(dt)
         -- Open lid as number approaches
         lid_open_progress = math.min(1, lid_open_progress + dt * 8)
 
-        -- Animation speed scales with SPEED (base speed of 3, scales up with SPEED)
-        local animation_speed = 1 + (SPEED / 100)
+        -- Animation speed scales with SPEED (base speed of 1, scales up significantly with SPEED)
+        local animation_speed = math.max(1, SPEED / 10)
         animating_number.progress = animating_number.progress + dt * animation_speed
         if animating_number.progress >= 1 then
             -- Animation complete - add to solution
             solution = solution + animating_number.value
             animating_number = nil
         end
-        return -- Don't process new numbers while animating
     else
         -- Close lid when no animation
         lid_open_progress = math.max(0, lid_open_progress - dt * 4)
@@ -152,17 +151,23 @@ function love.update(dt)
 
             -- Check if current number is invalid
             if m.is_invalid_number(current_number) then
-                -- Start animation to trash
-                local trash_x = WINDOW_WIDTH - 100
-                local trash_y = 240 -- Adjusted to go into the top of the bin
-                animating_number = {
-                    value = current_number,
-                    x = WINDOW_WIDTH / 2,
-                    y = WINDOW_HEIGHT / 2,
-                    target_x = trash_x,
-                    target_y = trash_y,
-                    progress = 0
-                }
+                -- Start animation to trash (or complete instantly if already animating)
+                if animating_number then
+                    -- Already animating, just add directly to solution
+                    solution = solution + current_number
+                else
+                    -- Start new animation
+                    local trash_x = WINDOW_WIDTH - 100
+                    local trash_y = 240 -- Adjusted to go into the top of the bin
+                    animating_number = {
+                        value = current_number,
+                        x = WINDOW_WIDTH / 2,
+                        y = WINDOW_HEIGHT / 2,
+                        target_x = trash_x,
+                        target_y = trash_y,
+                        progress = 0
+                    }
+                end
             end
 
             -- Move to next number
@@ -172,11 +177,6 @@ function love.update(dt)
             if current_number > current_range.last then
                 current_range_idx = current_range_idx + 1
                 current_number = 0
-            end
-
-            -- Stop processing if we started an animation
-            if animating_number then
-                break
             end
         end
     end
