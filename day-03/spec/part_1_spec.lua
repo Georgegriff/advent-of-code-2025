@@ -1,0 +1,13 @@
+local m = require "part1"
+pcall(function() require("lldebugger").start() end)
+describe("solutions", function()
+    it("test input", function()
+        assert.are.equal(357, m.solution("./inputs/test.txt"))
+    end)
+    it("finds largest number in sequence", function()
+        assert.are.equal(89, m.largest_number("123456789"))
+    end)
+    it("input", function()
+        assert.are.equal(17179, m.solution("./inputs/input.txt"))
+    end)
+end)
