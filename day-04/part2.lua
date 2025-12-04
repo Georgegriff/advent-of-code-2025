@@ -2,6 +2,7 @@ local file_utils = require("utils.file")
 local script_utils = require("utils.script")
 local Point = require("utils.point")
 local Grid = require("utils.grid")
+local Set = require("utils.set")
 local M = {
     ---@type Grid | nil
     grid = nil
@@ -13,21 +14,67 @@ local EMPTY = "."
 function M.solution(input_file)
     ---@type Grid
     local grid = M.create_grid(input_file)
-    local solution = 0
-    grid:each_point(function(other)
-        grid:each_point(function(point)
-            if point == other then
-                return
+    ---@type Set
+    local allowed_points = Set()
+    function checkPoint(point)
+        -- check point
+        if allowed_points:has(point) then
+            return
+        end
+        if M.is_coordinate_allowed(point.x, point.y) then
+            allowed_points:add(point)
+            point.entity = EMPTY
+
+            local adjacentPoints = M.adjacent_points(point)
+            for _, adjPoint in ipairs(adjacentPoints) do
+                if not allowed_points:has(adjPoint) then
+                    -- recheck
+                    checkPoint(adjPoint)
+                end
             end
-            if M.is_coordinate_allowed(point.x, point.y) then
-                solution = solution + 1
-                -- pick up the paper
-                point.entity = EMPTY
-                return
-            end
-        end)
+        end
+    end
+
+    grid:each_point(function(p)
+        checkPoint(p)
     end)
-    return solution
+    return #allowed_points
+end
+
+function M.adjacent_matrices()
+    return {
+        --north
+        { x = 0,  y = -1 },
+        -- north-east
+        { x = 1,  y = -1 },
+        -- east
+        { x = 1,  y = 0 },
+        -- south-east
+        { x = 1,  y = 1 },
+        -- south
+        { x = 0,  y = 1 },
+        -- south-west
+        { x = -1, y = 1 },
+        -- west
+        { x = -1, y = 0 },
+        -- north-west
+        { x = -1, y = -1 }
+    }
+end
+
+---@param point Point
+function M.adjacent_points(point)
+    local points = {}
+    local matrices = M.adjacent_matrices()
+    for _, matrix in ipairs(matrices) do
+        local x = point.x + matrix.x
+        local y = point.y + matrix.y
+        if M.grid:in_bounds(x, y) then
+            local adjPoint = M.grid.coordinates[y][x]
+            table.insert(points, adjPoint)
+        end
+    end
+    return points
 end
 
 function M.is_coordinate_allowed(x, y)
@@ -35,35 +82,13 @@ function M.is_coordinate_allowed(x, y)
     local PROXIMITY_LIMIT = 4
     local proximity_counter = 0
     if point.entity == PAPER then
-        -- north
-        local checks = {
-            --north
-            { x = point.x,     y = point.y - 1 },
-            -- north-east
-            { x = point.x + 1, y = point.y - 1 },
-            -- east
-            { x = point.x + 1, y = point.y },
-            -- south-east
-            { x = point.x + 1, y = point.y + 1 },
-            -- south
-            { x = point.x,     y = point.y + 1 },
-            -- south-west
-            { x = point.x - 1, y = point.y + 1 },
-            -- west
-            { x = point.x - 1, y = point.y },
-            -- north-west
-            { x = point.x - 1, y = point.y - 1 }
-
-        }
-        for _, currentCheck in ipairs(checks) do
-            if M.grid:in_bounds(currentCheck.x, currentCheck.y) then
-                local pointAtCheck = M.grid.coordinates[currentCheck.y][currentCheck.x]
-                if pointAtCheck.entity == PAPER then
-                    proximity_counter = proximity_counter + 1
-                end
-                if proximity_counter >= PROXIMITY_LIMIT then
-                    return false
-                end
+        local checks = M.adjacent_points(point)
+        for _, pointAtCheck in ipairs(checks) do
+            if pointAtCheck.entity == PAPER then
+                proximity_counter = proximity_counter + 1
+            end
+            if proximity_counter >= PROXIMITY_LIMIT then
+                return false
             end
         end
         return true

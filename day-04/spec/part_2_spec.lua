@@ -19,6 +19,6 @@ describe("solutions", function()
     end)
 
     it("input", function()
-        assert.are.equal(0, m.solution("./inputs/input.txt"))
+        assert.are.equal(8722, m.solution("./inputs/input.txt"))
     end)
 end)
