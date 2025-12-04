@@ -1,0 +1,10 @@
+local m = require "part1"
+pcall(function() require("lldebugger").start() end)
+describe("solutions", function()
+    it("test input", function()
+        assert.are.equal(0, m.solution("./inputs/test.txt"))
+    end)
+    it("input", function()
+        assert.are.equal(0, m.solution("./inputs/input.txt"))
+    end)
+end)
