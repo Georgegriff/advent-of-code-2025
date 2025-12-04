@@ -1,0 +1,15 @@
+-- local Grid = require "utils.grid"
+-- local Point = require "utils.point"
+-- pcall(function() require("lldebugger").start() end)
+-- describe("solutions", function()
+--     it("can add a point", function()
+--         ---@type Grid
+--         local grid = Grid()
+--         grid:addPoint(Point(1, 1, "@"))
+--         ---@type Point
+--         local first = grid.coordinates[1][1]
+--         assert.are.equal(first.x, 1)
+--         assert.are.equal(first.y, 1)
+--         assert.are.equal(first.entity, "@")
+--     end)
+-- end)
