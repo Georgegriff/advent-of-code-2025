@@ -16,7 +16,10 @@ function M.read_file_lines(filename, callback)
         error("Cannot open file: " .. filename)
     end
     for line in file:lines() do
-        callback(line)
+        local should_continue = callback(line)
+        if type(should_continue) == "boolean" and should_continue == false then
+            break
+        end
     end
     file:close()
 end
