@@ -2,10 +2,6 @@ local file_utils = require("utils.file")
 local script_utils = require("utils.script")
 local M = {}
 
----@class Calculation
----@field numbers number[]
----@field operator string
-
 ---@class Operator
 ---@field operator string
 ---@field start_index number
@@ -50,8 +46,7 @@ function M.solution(input_file)
     end)
     local sum = 0
     for _, operator in ipairs(operators) do
-        local converted_numbers = M.convert_cephalopod_calc(operator, calc_strings)
-        local result = M.run_calculation(converted_numbers)
+        local result = M.process_and_calculate(operator, calc_strings)
         sum = sum + result
     end
     return sum
@@ -59,14 +54,12 @@ end
 
 ---@param operator Operator
 ---@param calc_strings string[]
----@return Calculation
-function M.convert_cephalopod_calc(operator, calc_strings)
-    ---@type Calculation
-    local calc = {
-        operator = operator.operator,
-        numbers = {}
-    }
+---@return number
+function M.process_and_calculate(operator, calc_strings)
     local rows = #calc_strings
+    local result = 0
+    local is_first_number = true
+
     for i = operator.start_index, operator.end_index do
         local num_string = ""
         for j = 1, rows do
@@ -76,26 +69,23 @@ function M.convert_cephalopod_calc(operator, calc_strings)
                 num_string = num_string .. char
             end
         end
-        table.insert(calc.numbers, tonumber(num_string))
-    end
-    return calc
-end
+        local number = tonumber(num_string)
+        if not number then
+            error(string.format("failed to convert number: %s", num_string))
+        end
 
----@param calculation Calculation
-function M.run_calculation(calculation)
-    local sum = 0
-    for i, number in ipairs(calculation.numbers) do
-        if i == 1 then
-            sum = number
-        elseif calculation.operator == "*" then
-            sum = sum * number
-        elseif calculation.operator == "+" then
-            sum = sum + number
+        if is_first_number then
+            result = number
+            is_first_number = false
+        elseif operator.operator == "*" then
+            result = result * number
+        elseif operator.operator == "+" then
+            result = result + number
         else
-            error(string.format("invalid operator %s", calculation.operator))
+            error(string.format("invalid operator %s", operator.operator))
         end
     end
-    return sum
+    return result
 end
 
 if script_utils.should_run_main() then
