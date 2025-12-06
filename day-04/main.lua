@@ -287,7 +287,7 @@ end
 
 local function draw_title()
     love.graphics.setNewFont(24)
-    local title = "Day 4: Warehouse"
+    local title = "Day 4: Printing Department"
     local screenWidth = love.graphics.getWidth()
     local titleWidth = love.graphics.getFont():getWidth(title)
     local x = (screenWidth - titleWidth) / 2
