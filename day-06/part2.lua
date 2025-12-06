@@ -11,13 +11,12 @@ local M = {}
 ---@field start_index number
 ---@field end_index number
 
----@type string[]
-local calc_strings = {}
-
----@type Operator[]
-local operators = {}
-
 function M.solution(input_file)
+    ---@type string[]
+    local calc_strings = {}
+
+    ---@type Operator[]
+    local operators = {}
     file_utils.read_file_lines(input_file, function(line)
         local is_on_operators = line:match("([*+]+)")
 

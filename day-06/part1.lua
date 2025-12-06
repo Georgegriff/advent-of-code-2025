@@ -6,10 +6,9 @@ local M = {}
 ---@field numbers number[]
 ---@field operator string
 
----@type Calculation[]
-local calculations = {}
-
 function M.solution(input_file)
+    ---@type Calculation[]
+    local calculations = {}
     file_utils.read_file_lines(input_file, function(line)
         local is_on_operators = line:match("([*+]+)")
         local parts = line:gmatch("%S+")
