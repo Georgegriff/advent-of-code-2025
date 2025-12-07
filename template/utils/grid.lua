@@ -1,5 +1,4 @@
 local Object = require "utils.object"
-local Point = require "utils.point"
 
 ---@class Grid : Object
 ---@field coordinates Point[][]
@@ -65,7 +64,7 @@ function Grid:to_s()
             local point = row[x]
             rowPrinter = rowPrinter .. point.entity
         end
-        local newline = y < #row and "\n" or ""
+        local newline = y < #rows and "\n" or ""
         printer = printer .. rowPrinter .. newline
     end
     return printer

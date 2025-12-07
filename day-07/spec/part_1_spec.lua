@@ -1,0 +1,21 @@
+local m = require "part1"
+local file_utils = require("utils.file"
+)
+pcall(function() require("lldebugger").start() end)
+describe("solutions", function()
+    it("processes grid input", function()
+        local test_input = file_utils.read_file("./inputs/test.txt")
+        m.create_grid("./inputs/test.txt")
+        assert.are.equal("\n" .. test_input, "\n" .. m.grid:to_s())
+    end)
+
+    it("test input", function()
+        local answer = m.solution("./inputs/test.txt")
+        local test_output_graph = file_utils.read_file("./outputs/test_final.txt")
+        assert.are.equal("\n" .. test_output_graph, "\n" .. m.grid:to_s())
+        assert.are.equal(21, answer)
+    end)
+    it("input", function()
+        assert.are.equal(1615, m.solution("./inputs/input.txt"))
+    end)
+end)
