@@ -26,7 +26,7 @@ local isPaused = false
 local isCompleted = false
 local solution = nil
 local solutionStep = nil
-local use_test_input = false
+local use_test_input = true
 local hasPrintedSolution = false
 local Set = require("utils.set")
 local Circuit = require("circuit")
@@ -34,6 +34,10 @@ local Circuit = require("circuit")
 -- Performance settings
 local CULL_OFFSCREEN = true
 local MAX_CONNECTIONS_TO_DRAW = 5000 -- Limit connections drawn for performance
+
+-- Christmas light animation
+local lightAnimationTime = 0
+local LIGHT_CHANGE_INTERVAL = 2.0 -- seconds
 
 local function calculateDefaultSpeed(stepCount)
     -- Target: complete in ~2 minutes at default speed for large datasets
@@ -60,8 +64,8 @@ local function drawFloor()
         return
     end
 
-    -- Draw floor for all possible grid positions as filled isometric diamonds
-    love.graphics.setColor(0.4, 0.4, 0.42)
+    -- Draw floor with simple dark color
+    love.graphics.setColor(0.15, 0.15, 0.18)
     for y = 0, isometricGrid.mapHeight - 1 do
         for x = 0, isometricGrid.mapWidth - 1 do
             -- Cull offscreen tiles for performance
@@ -79,8 +83,8 @@ local function drawFloor()
         end
     end
 
-    -- Draw subtle grid lines on top
-    love.graphics.setColor(0.35, 0.35, 0.37)
+    -- Draw very subtle grid lines
+    love.graphics.setColor(0.2, 0.2, 0.23, 0.5)
     love.graphics.setLineWidth(1)
     for y = 0, isometricGrid.mapHeight - 1 do
         for x = 0, isometricGrid.mapWidth - 1 do
@@ -162,6 +166,28 @@ local function getScreenPosition(point)
     return screenX + tileW / 2, screenY + tileH / 2
 end
 
+-- Christmas colors for lights
+local CHRISTMAS_COLORS = {
+    { 1.0, 0.2, 0.2 }, -- Red
+    { 0.2, 1.0, 0.3 }, -- Green
+    { 1.0, 0.9, 0.2 }, -- Gold/Yellow
+}
+
+local pointColorOffsets = {}
+
+local function getPointColor(point)
+    -- Get or create a random offset for this point
+    if not pointColorOffsets[point] then
+        pointColorOffsets[point] = math.random(0, #CHRISTMAS_COLORS - 1)
+    end
+
+    -- Calculate current color index based on time + offset
+    local baseIndex = math.floor(lightAnimationTime / LIGHT_CHANGE_INTERVAL) % #CHRISTMAS_COLORS
+    local colorIndex = ((baseIndex + pointColorOffsets[point]) % #CHRISTMAS_COLORS) + 1
+
+    return CHRISTMAS_COLORS[colorIndex]
+end
+
 local function getCircuits()
     local circuitsList = {}
     local seenCircuits = {}
@@ -200,8 +226,13 @@ local function drawConnections()
     local maxStep = math.min(currentStep, MAX_CONNECTIONS_TO_DRAW)
 
     for circuitIdx, circuit in ipairs(circuits) do
-        local color = colors[(circuitIdx % #colors) + 1]
-        love.graphics.setColor(color[1], color[2], color[3], 0.5)
+        -- Use black when completed, otherwise use circuit color
+        if isCompleted then
+            love.graphics.setColor(0.2, 0.2, 0.2, 0.8)
+        else
+            local color = colors[(circuitIdx % #colors) + 1]
+            love.graphics.setColor(color[1], color[2], color[3], 0.5)
+        end
 
         -- Draw lines between all connected points in the circuit
         -- Start from the most recent connections for visual relevance
@@ -266,7 +297,7 @@ local function drawPoints()
         end
     end
 
-    -- Second pass: Draw points with height
+    -- Second pass: Draw points with height (Christmas lights!)
     for _, point in ipairs(points) do
         local gridX = math.floor((point.x / SCALE_FACTOR) - minX)
         local gridY = math.floor((point.y / SCALE_FACTOR) - minY)
@@ -277,16 +308,38 @@ local function drawPoints()
 
         -- Cull offscreen points
         if not CULL_OFFSCREEN or isOnScreen(screenX + tileW / 2, screenY + tileH / 2, 100) then
-            -- Color based on whether point is in a circuit
-            if point.circuit then
-                love.graphics.setColor(0.3, 1.0, 0.3, 0.9) -- Green for connected points
-            else
-                love.graphics.setColor(1, 0.3, 0.3, 0.9)   -- Red for unconnected points
-            end
+            local centerX = screenX + tileW / 2
+            local centerY = screenY + tileH / 2
+            local pointSize = (5 + (scaledZ * 0.3)) * zoom
 
-            -- Size increases with height and scales with zoom
-            local pointSize = (4 + (scaledZ * 0.3)) * zoom
-            love.graphics.ellipse("fill", screenX + tileW / 2, screenY + tileH / 2, pointSize * 2, pointSize)
+            if point.circuit then
+                -- Draw Christmas tree light with glow effect
+                local color = getPointColor(point)
+
+                -- Outer glow (largest, most transparent)
+                love.graphics.setColor(color[1], color[2], color[3], 0.2)
+                love.graphics.ellipse("fill", centerX, centerY, pointSize * 4, pointSize * 2)
+
+                -- Middle glow
+                love.graphics.setColor(color[1], color[2], color[3], 0.5)
+                love.graphics.ellipse("fill", centerX, centerY, pointSize * 2.5, pointSize * 1.25)
+
+                -- Main bulb
+                love.graphics.setColor(color[1], color[2], color[3], 1.0)
+                love.graphics.ellipse("fill", centerX, centerY, pointSize * 2, pointSize)
+
+                -- Bright white center (hot spot)
+                love.graphics.setColor(1.0, 1.0, 1.0, 0.8)
+                love.graphics.ellipse("fill", centerX, centerY, pointSize * 0.8, pointSize * 0.4)
+            else
+                -- Grey/black for unconnected points (lights that are off)
+                love.graphics.setColor(0.25, 0.25, 0.25, 0.6)
+                love.graphics.ellipse("fill", centerX, centerY, pointSize * 2, pointSize)
+
+                -- Dull reflection on off lights
+                love.graphics.setColor(0.4, 0.4, 0.4, 0.3)
+                love.graphics.ellipse("fill", centerX, centerY, pointSize * 0.6, pointSize * 0.3)
+            end
         end
     end
 end
@@ -303,6 +356,8 @@ local function reset_simulation()
     solution = nil
     solutionStep = nil
     hasPrintedSolution = false
+    lightAnimationTime = 0
+    pointColorOffsets = {} -- Clear point color offsets
     -- Clear circuit assignments from points
     for _, point in ipairs(points) do
         point.circuit = nil
@@ -312,6 +367,8 @@ end
 local function reload_input()
     -- Clear cached values
     cachedMinX, cachedMinY = nil, nil
+    lightAnimationTime = 0
+    pointColorOffsets = {} -- Clear point color offsets
 
     -- Load points from input file
     local input_file = use_test_input and "inputs/test.txt" or "inputs/input.txt"
@@ -433,20 +490,33 @@ local function draw_status()
         love.graphics.print(string.format("Zoom: %.2fx", isometricGrid.zoom), 50, 270)
     end
 
-    if isCompleted and solution and solutionStep then
-        love.graphics.setColor(0.2, 0.9, 0.2)
-        love.graphics.print("Processing complete!", 50, 300)
-
-        love.graphics.setColor(1, 0.84, 0)
-        local connecting_box = distances[solutionStep]
-        love.graphics.print(string.format("Solution: %d x %d = %d",
-            connecting_box.startPoint.x, connecting_box.endPoint.x, solution), 50, 330)
-    elseif not isPaused then
+    if not isPaused and not isCompleted then
         love.graphics.setColor(0.2, 0.9, 0.2)
         love.graphics.print("Running...", 50, 300)
-    else
+    elseif isPaused and not isCompleted then
         love.graphics.setColor(1, 0.5, 0.2)
         love.graphics.print("Paused (SPACE to resume)", 50, 300)
+    end
+end
+
+local function draw_completion_status()
+    if isCompleted and solution and solutionStep then
+        local screenHeight = love.graphics.getHeight()
+        love.graphics.setNewFont(20)
+
+        -- Processing complete text at bottom center
+        love.graphics.setColor(1, 1, 1)
+        local completeText = "Processing complete!"
+        local completeWidth = love.graphics.getFont():getWidth(completeText)
+        local screenWidth = love.graphics.getWidth()
+        love.graphics.print(completeText, (screenWidth - completeWidth) / 2, screenHeight - 100)
+
+        -- Solution text below it
+        local connecting_box = distances[solutionStep]
+        local solutionText = string.format("Solution: %d x %d = %d",
+            connecting_box.startPoint.x, connecting_box.endPoint.x, solution)
+        local solutionWidth = love.graphics.getFont():getWidth(solutionText)
+        love.graphics.print(solutionText, (screenWidth - solutionWidth) / 2, screenHeight - 70)
     end
 end
 
@@ -480,7 +550,7 @@ function love.load()
     -- Create speed slider (at bottom of screen)
     speed_slider = Slider.create({
         x = 200,
-        y = screenHeight - 60,
+        y = screenHeight - 30,
         width = 600,
         height = 20,
         min_value = 0,
@@ -568,6 +638,9 @@ function love.update(dt)
         Toggle.update(input_toggle, dt)
     end
 
+    -- Update Christmas light animation (always runs)
+    lightAnimationTime = lightAnimationTime + dt
+
     -- Step through the algorithm based on speed (stop if completed)
     if not isPaused and not isCompleted and SPEED > 0 and currentStep < #distances then
         timeSinceLastStep = timeSinceLastStep + dt * SPEED
@@ -595,6 +668,7 @@ function love.draw()
     draw_title()
     draw_status()
     draw_controls()
+    draw_completion_status()
 
     if input_toggle then
         Toggle.draw(input_toggle)
