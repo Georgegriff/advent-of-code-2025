@@ -1,6 +1,9 @@
 local Object = require "utils.object"
 local Set = Object:extend()
 
+---@class Set
+local Set = Object:extend()
+
 function Set:new()
     self._ = {}
 end
