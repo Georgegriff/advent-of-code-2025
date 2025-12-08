@@ -33,10 +33,7 @@ function M.get_ordered_distances(points)
     return distances
 end
 
-function M.solution(input_file)
-    ---@type Circuit[]
-    local circuits = {}
-
+function M.load_points(input_file)
     ---@type Point3D[]
     local points = {}
     file_utils.read_file_lines(input_file, function(line)
@@ -45,8 +42,14 @@ function M.solution(input_file)
         table.insert(points, point)
     end)
 
-    local distances = M.get_ordered_distances(points)
+    return points
+end
 
+---@param points Point3D[]
+---@param distances Distance[]
+---@return Circuit[], number
+function M.connect_circuits_until_fully_connected(points, distances)
+    local circuits = {}
     ---@type Set
     local connected_points = Set()
     local is_completed = function() return #circuits == 1 and #connected_points == #points end
@@ -81,8 +84,17 @@ function M.solution(input_file)
         end
         iterations_count = iterations_count + 1
     end
-    local connecting_box = distances[iterations_count - 1]
 
+    return circuits, iterations_count
+end
+
+function M.solution(input_file)
+    local points = M.load_points(input_file)
+    local distances = M.get_ordered_distances(points)
+
+
+    local _, iterations_count = M.connect_circuits_until_fully_connected(points, distances);
+    local connecting_box = distances[iterations_count - 1]
 
     ---
     -- todo sort by size of points Set
