@@ -65,7 +65,7 @@ local function drawFloor()
     end
 
     -- Draw floor with simple dark color
-    love.graphics.setColor(0.15, 0.15, 0.18)
+    love.graphics.setColor(0.4, 0.4, 0.43)
     for y = 0, isometricGrid.mapHeight - 1 do
         for x = 0, isometricGrid.mapWidth - 1 do
             -- Cull offscreen tiles for performance
