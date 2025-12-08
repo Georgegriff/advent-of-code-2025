@@ -14,7 +14,6 @@ local M = {}
 ---@return Distance[]
 function M.get_ordered_distances(points)
     local distances = {}
-    -- Only generate unique pairs (i < j) to avoid duplicates and expensive memoization
     for i, pointA in ipairs(points) do
         for j = i + 1, #points do
             local pointB = points[j]
@@ -83,11 +82,7 @@ function M.solution(input_file)
         iterations_count = iterations_count + 1
     end
     local connecting_box = distances[iterations_count - 1]
-    -- find two closest points, join them and build a circuit
-    -- keep track of unconnected points
-    -- find then next two closest points, if one of these points is already in a circuit add it to that circuit
-    --- else create new circuit
-    -- repeat until you have no more unconnected points
+
 
     ---
     -- todo sort by size of points Set
