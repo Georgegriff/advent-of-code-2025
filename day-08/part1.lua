@@ -54,34 +54,30 @@ function M.solution(input_file, iterations_count)
 
     local iterations_max = iterations_count
     local iterations_count = 1
+    -- might need to be > 1 because can't make a line from 1 point
     while (iterations_count <= iterations_max) do
         local curr_distance = distances[iterations_count]
         local pointA = curr_distance.startPoint
         local pointB = curr_distance.endPoint
-        if pointA.circuit and pointB.circuit and pointA.circuit ~= pointB.circuit then
+        if pointA.circuit and pointB.circuit and pointB.circuit ~= pointA.circuit then
+            -- join the circuits
+
             local circuitB = pointB.circuit
             for _, cirPoint in ipairs(circuitB.points:values()) do
                 pointA.circuit:add_point(cirPoint)
             end
             table.remove(circuits, M.index_of(circuits, circuitB))
-            -- join the circuits
-        else
-            local connected = false
-            for _, circuit in ipairs(circuits) do
-                if circuit:has_point(pointA) then
-                    circuit:add_point(pointB)
-                    connected = true
-                elseif circuit:has_point(pointB) then
-                    circuit:add_point(pointA)
-                    connected = true
-                end
-            end
-            if not connected then
-                local circuit = Circuit()
-                circuit:add_point(pointA)
-                circuit:add_point(pointB)
-                table.insert(circuits, circuit)
-            end
+        elseif not pointA.circuit and not pointB.circuit then
+            local circuit = Circuit()
+            circuit:add_point(pointA)
+            circuit:add_point(pointB)
+            table.insert(circuits, circuit)
+        elseif pointA.circuit and not pointB.circuit then
+            local circuit = pointA.circuit
+            circuit:add_point(pointB)
+        elseif pointB.circuit and not pointA.circuit then
+            local circuit = pointB.circuit
+            circuit:add_point(pointA)
         end
         iterations_count = iterations_count + 1
     end
@@ -150,9 +146,9 @@ function M.top_3_largest_circuit(circuits)
 end
 
 if script_utils.should_run_main() then
-    local input_file = arg[1] or "./inputs/test.txt"
+    local input_file = arg[1] or "./inputs/input.txt"
     local start_time = os.clock()
-    local solution = M.solution(input_file, 10)
+    local solution = M.solution(input_file, 1000)
     local end_time = os.clock()
     local elapsed_time = (end_time - start_time) * 1000
     print(string.format("The answer is: %s", solution))
