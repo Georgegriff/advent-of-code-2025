@@ -6,6 +6,9 @@ local Circuit = require("circuit")
 local Set = require("utils.set")
 local M = {}
 
+-- Compatibility: Lua 5.1 uses unpack, Lua 5.2+ uses table.unpack
+local unpack = table.unpack or unpack
+
 ---@class Distance
 ---@field distance number
 ---@field startPoint Point3D
@@ -37,7 +40,7 @@ function M.load_points(input_file)
     ---@type Point3D[]
     local points = {}
     file_utils.read_file_lines(input_file, function(line)
-        local x, y, z = table.unpack(string_utils.split(line, ",", function(str_part) return tonumber(str_part) end))
+        local x, y, z = unpack(string_utils.split(line, ",", function(str_part) return tonumber(str_part) end))
         local point = Point(x, y, z)
         table.insert(points, point)
     end)
