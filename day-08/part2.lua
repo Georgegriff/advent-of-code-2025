@@ -14,21 +14,16 @@ local M = {}
 ---@return Distance[]
 function M.get_ordered_distances(points)
     local distances = {}
-    local memoized_checks = {}
-    for _, pointA in ipairs(points) do
-        for _, pointB in ipairs(points) do
-            if pointA ~= pointB then
-                local memo_string = M.get_memo_string(points, pointA, pointB)
-                if not memoized_checks[memo_string] then
-                    local distance = M.euclidean_distance(pointA, pointB)
-                    memoized_checks[memo_string] = true
-                    table.insert(distances, {
-                        distance = distance,
-                        startPoint = pointA,
-                        endPoint = pointB
-                    })
-                end
-            end
+    -- Only generate unique pairs (i < j) to avoid duplicates and expensive memoization
+    for i, pointA in ipairs(points) do
+        for j = i + 1, #points do
+            local pointB = points[j]
+            local distance = M.euclidean_distance(pointA, pointB)
+            table.insert(distances, {
+                distance = distance,
+                startPoint = pointA,
+                endPoint = pointB
+            })
         end
     end
 
@@ -61,7 +56,6 @@ function M.solution(input_file)
         local curr_distance = distances[iterations_count]
         local pointA = curr_distance.startPoint
         local pointB = curr_distance.endPoint
-        print(string.format("Connected points: %s, circuits_length: %s", #connected_points, #circuits))
         if pointA.circuit and pointB.circuit and pointB.circuit ~= pointA.circuit then
             -- join the circuits
 
@@ -110,19 +104,6 @@ function M.index_of(t, value)
         end
     end
     return nil
-end
-
-function M.get_memo_string(points, pointA, pointB)
-    local indexA = M.index_of(points, pointA)
-    local indexB = M.index_of(points, pointB)
-
-    if indexA < indexB then
-        local currA = pointA
-        pointA = pointB
-        pointB = currA
-    end
-
-    return string.format("%s-%s", pointA:to_s(), pointB:to_s())
 end
 
 ---@param pointA Point3D
