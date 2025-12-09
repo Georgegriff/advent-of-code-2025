@@ -54,26 +54,44 @@ function M.find_max_area(points)
     return max_area, { a = max_point_a, b = max_point_b }
 end
 
----@return Point[], {x_max: number, y_max: number}
+---@return Point[], {x_max: number, y_max: number, x_min: number, y_min: number, width: number, height: number}
 function M.get_points(input_file)
     local points = {}
-    local x_max = 0
-    local y_max = 0
+    local x_max = -math.huge
+    local y_max = -math.huge
+    local x_min = math.huge
+    local y_min = math.huge
+
     file_utils.read_file_lines(input_file, function(line)
         local x, y = unpack(string_utils.split(line, ",", function(str)
             return tonumber(str)
         end))
 
         local point = Point(x, y, "#")
-        if x > x_max then
-            x_max = x
-        end
-        if y > y_max then
-            y_max = y
-        end
+        if x > x_max then x_max = x end
+        if y > y_max then y_max = y end
+        if x < x_min then x_min = x end
+        if y < y_min then y_min = y end
         table.insert(points, point)
     end)
-    return points, { x_max = x_max, y_max = y_max }
+
+    -- Normalize points to start at (0, 0)
+    for _, point in ipairs(points) do
+        point.x = point.x - x_min
+        point.y = point.y - y_min
+    end
+
+    local width = x_max - x_min
+    local height = y_max - y_min
+
+    return points, {
+        x_max = width,
+        y_max = height,
+        x_min = 0,
+        y_min = 0,
+        width = width,
+        height = height
+    }
 end
 
 ---@param a {x: number, y: number}
