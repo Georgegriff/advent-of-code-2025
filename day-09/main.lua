@@ -27,19 +27,19 @@ function getPolygon(points)
 end
 
 ---@return boolean
-function is_inside_area(physTriangles, rect)
+function is_inside_area(polygon, rect)
     return false
 end
 
 ---@return table[]
-function get_rects(physTriangles, points)
+function get_rects(polygon, points)
     local rects = {}
     local max_area = 0
     for i, pointA in ipairs(points) do
         for j = i + 1, #points do
             local pointB = points[j]
             local rect = m.project_rect(pointA, pointB)
-            if is_inside_area(physTriangles, rect) then
+            if is_inside_area(polygon, rect) then
                 local area = m.get_area(pointA, pointB)
                 if area > max_area then
                     max_area = area
@@ -52,16 +52,6 @@ function get_rects(physTriangles, points)
     return rects
 end
 
-function checkCollision(physTriangles, x, y)
-    for _, triangle in ipairs(physTriangles) do
-        if (triangle.fixture:testPoint(x, y)) then
-            return true
-        end
-    end
-
-    return false
-end
-
 local chainShape = nil
 local chainBody = nil
 local chainFixture = nil
@@ -72,7 +62,7 @@ function love.load()
     love.window.setTitle("Day 9")
 
     -- Load points
-    points, max_bounds = m.get_points("./inputs/test.txt")
+    points, max_bounds = m.get_points("./inputs/input.txt")
 
     -- Calculate scale to fit everything in window
     local grid_width = max_bounds.width
@@ -97,7 +87,7 @@ function love.load()
 
     print(string.format("Chain shape created with %d vertices", #vertices / 2))
 
-    rects = get_rects({ { fixture = chainFixture, body = chainBody, shape = chainShape } }, points)
+    rects = get_rects({ fixture = chainFixture, body = chainBody, shape = chainShape }, points)
 
 
     -- Create grid
