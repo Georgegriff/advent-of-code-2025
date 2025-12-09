@@ -6,6 +6,48 @@ local M = {}
 
 local unpack = table.unpack or unpack
 
+---@param polygon table[]
+---@param x number
+---@param y number
+---@return boolean
+function M.point_in_polygon(polygon, x, y)
+    local n = #polygon
+
+    -- Check if point is on any edge
+    for i = 1, n do
+        local j = (i % n) + 1
+        local xi, yi = polygon[i].x, polygon[i].y
+        local xj, yj = polygon[j].x, polygon[j].y
+
+        local min_x, max_x = math.min(xi, xj), math.max(xi, xj)
+        local min_y, max_y = math.min(yi, yj), math.max(yi, yj)
+
+        if x >= min_x and x <= max_x and y >= min_y and y <= max_y then
+            local cross = (y - yi) * (xj - xi) - (x - xi) * (yj - yi)
+            if math.abs(cross) < 1e-10 then
+                return true -- Point is on the boundary
+            end
+        end
+    end
+
+    -- Ray casting for interior points
+    local inside = false
+    local j = n
+
+    for i = 1, n do
+        local xi, yi = polygon[i].x, polygon[i].y
+        local xj, yj = polygon[j].x, polygon[j].y
+
+        if ((yi > y) ~= (yj > y)) and (x < (xj - xi) * (y - yi) / (yj - yi) + xi) then
+            inside = not inside
+        end
+
+        j = i
+    end
+
+    return inside
+end
+
 function M.solution(input_file)
     local points = M.get_points(input_file)
     local max_area = M.find_max_area(points)
@@ -34,20 +76,71 @@ function M.project_rect(a, c)
     return points
 end
 
+-- Check if segment (x1,y1)-(x2,y2) intersects segment (x3,y3)-(x4,y4)
+function M.segments_intersect(x1, y1, x2, y2, x3, y3, x4, y4)
+    local denom = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1)
+    if math.abs(denom) < 1e-10 then return false end
+
+    local ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denom
+    local ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denom
+
+    return ua > 0 and ua < 1 and ub > 0 and ub < 1
+end
+
 ---@param points Point[]
 ---@return number,  {a: Point, b: Point}
 function M.find_max_area(points)
     local max_area = 0
     local max_point_a = nil
     local max_point_b = nil
+
     for i, pointA in ipairs(points) do
         for j = i + 1, #points do
             local pointB = points[j]
-            local area = M.get_area(pointA, pointB)
-            if area > max_area then
-                max_area = area
-                max_point_a = pointA
-                max_point_b = pointB
+
+            -- Get the 4 corners of the rectangle
+            local min_x = math.min(pointA.x, pointB.x)
+            local max_x = math.max(pointA.x, pointB.x)
+            local min_y = math.min(pointA.y, pointB.y)
+            local max_y = math.max(pointA.y, pointB.y)
+
+            -- Check if all 4 corners are inside or on the polygon boundary
+            if M.point_in_polygon(points, min_x, min_y) and
+                M.point_in_polygon(points, max_x, min_y) and
+                M.point_in_polygon(points, min_x, max_y) and
+                M.point_in_polygon(points, max_x, max_y) then
+                -- For concave polygons, also check that no polygon edge crosses rectangle edges
+                local valid = true
+                local rect_edges = {
+                    { min_x, min_y, max_x, min_y }, -- top
+                    { max_x, min_y, max_x, max_y }, -- right
+                    { max_x, max_y, min_x, max_y }, -- bottom
+                    { min_x, max_y, min_x, min_y }, -- left
+                }
+
+                local n = #points
+                for k = 1, n do
+                    local l = (k % n) + 1
+                    local px1, py1 = points[k].x, points[k].y
+                    local px2, py2 = points[l].x, points[l].y
+
+                    for _, re in ipairs(rect_edges) do
+                        if M.segments_intersect(px1, py1, px2, py2, re[1], re[2], re[3], re[4]) then
+                            valid = false
+                            break
+                        end
+                    end
+                    if not valid then break end
+                end
+
+                if valid then
+                    local area = M.get_area(pointA, pointB)
+                    if area > max_area then
+                        max_area = area
+                        max_point_a = pointA
+                        max_point_b = pointB
+                    end
+                end
             end
         end
     end

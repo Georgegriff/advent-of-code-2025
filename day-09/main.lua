@@ -28,27 +28,24 @@ end
 
 ---@return boolean
 function is_inside_area(polygon, rect)
-    return false
+    return true
 end
 
 ---@return table[]
 function get_rects(polygon, points)
     local rects = {}
-    local max_area = 0
+
     for i, pointA in ipairs(points) do
         for j = i + 1, #points do
             local pointB = points[j]
             local rect = m.project_rect(pointA, pointB)
+
             if is_inside_area(polygon, rect) then
-                local area = m.get_area(pointA, pointB)
-                if area > max_area then
-                    max_area = area
-                end
                 table.insert(rects, rect)
             end
         end
     end
-    print(string.format("Max area: %s", max_area))
+
     return rects
 end
 
@@ -73,10 +70,6 @@ function love.load()
     offset_x = PADDING
     offset_y = PADDING
 
-    print(string.format("Grid dimensions: %dx%d, Scale: %.6f", grid_width, grid_height, scale))
-    print(string.format("Bounds: x[%d-%d], y[%d-%d]", max_bounds.x_min, max_bounds.x_max, max_bounds.y_min,
-        max_bounds.y_max))
-
     world = love.physics.newWorld(0, 0, true)
 
     -- Create chain shape from points
@@ -85,9 +78,8 @@ function love.load()
     chainBody = love.physics.newBody(world, 0, 0, "static")
     chainFixture = love.physics.newFixture(chainBody, chainShape)
 
-    print(string.format("Chain shape created with %d vertices", #vertices / 2))
 
-    rects = get_rects({ fixture = chainFixture, body = chainBody, shape = chainShape }, points)
+    rects = get_rects(points, points)
 
 
     -- Create grid
