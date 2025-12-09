@@ -6,7 +6,6 @@ local Circuit = require("circuit")
 local Set = require("utils.set")
 local M = {}
 
--- Compatibility: Lua 5.1 uses unpack, Lua 5.2+ uses table.unpack
 local unpack = table.unpack or unpack
 
 ---@class Distance
