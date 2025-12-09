@@ -25,10 +25,10 @@ function M.project_rect(a, c)
     --     }
     -- end
     -- other points in the rect, centered on tiles (matching triangle coordinates)
-    local b = { x = a.x + 0.5, y = c.y + 0.5 }
-    local d = { x = c.x + 0.5, y = a.y + 0.5 }
-    local a_centered = { x = a.x + 0.5, y = a.y + 0.5 }
-    local c_centered = { x = c.x + 0.5, y = c.y + 0.5 }
+    local b = { x = a.x, y = c.y }
+    local d = { x = c.x, y = a.y }
+    local a_centered = { x = a.x, y = a.y }
+    local c_centered = { x = c.x, y = c.y }
     local points = { a_centered, b, c_centered, d }
 
     return points

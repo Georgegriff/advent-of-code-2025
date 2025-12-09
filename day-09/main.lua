@@ -6,27 +6,22 @@ end
 
 local m = require("part2")
 
-local TILE_SIZE = 16
+local TILE_SIZE = 16 -- Will be calculated dynamically
 local points = {}
 local grid = {}
 local max_bounds = { x_max = 0, y_max = 0 }
+local WINDOW_WIDTH = 800
+local WINDOW_HEIGHT = 600
+local PADDING = 20
 
 ---@param points  Point[]
 function getPolygon(points)
     local vertices = {}
     for _, point in ipairs(points) do
-        table.insert(vertices, point.x + 0.5)
-        table.insert(vertices, point.y + 0.5)
+        table.insert(vertices, point.x)
+        table.insert(vertices, point.y)
     end
     return vertices
-end
-
----Get the center point of a cell in pixel coordinates
----@param x number Grid x coordinate
----@param y number Grid y coordinate
----@return number, number Center x and y in pixels
-function getCellCenter(x, y)
-    return x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2
 end
 
 ---@return boolean
@@ -75,11 +70,21 @@ local trianglesPhs = {}
 local rects = {}
 local world
 function love.load()
-    love.window.setMode(800, 600, { resizable = false })
+    love.window.setMode(WINDOW_WIDTH, WINDOW_HEIGHT, { resizable = false })
     love.window.setTitle("Day 9")
 
     -- Load points
     points, max_bounds = m.get_points("./inputs/test.txt")
+
+    -- Calculate dynamic tile size based on grid dimensions
+    local grid_width = max_bounds.x_max + 1
+    local grid_height = max_bounds.y_max + 1
+    local max_tile_width = (WINDOW_WIDTH - 2 * PADDING) / grid_width
+    local max_tile_height = (WINDOW_HEIGHT - 2 * PADDING) / grid_height
+    TILE_SIZE = math.max(1, math.min(max_tile_width, max_tile_height))
+
+    print(string.format("Grid dimensions: %dx%d, Tile size: %.2f", grid_width, grid_height, TILE_SIZE))
+
     triangles = love.math.triangulate(getPolygon(points))
     world = love.physics.newWorld(0, 0, true)
 
@@ -121,19 +126,22 @@ end
 function love.draw()
     love.graphics.clear(0.1, 0.1, 0.12)
 
-    -- Draw grid lines
-    love.graphics.setColor(0.2, 0.2, 0.22)
-    for y = 0, max_bounds.y_max + 1 do
-        for x = 0, max_bounds.x_max + 1 do
-            love.graphics.rectangle("line", x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+    -- Draw grid lines (only if tile size is large enough)
+    if TILE_SIZE >= 4 then
+        love.graphics.setColor(0.2, 0.2, 0.22)
+        for y = 0, max_bounds.y_max do
+            for x = 0, max_bounds.x_max do
+                love.graphics.rectangle("line", PADDING + x * TILE_SIZE, PADDING + y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            end
         end
     end
 
-    -- Draw filled points as red squares
+    -- Draw filled points as red ellipses
     love.graphics.setColor(0.9, 0.1, 0.1)
+    local ellipse_size = math.max(1, TILE_SIZE / 3)
     for y, row in pairs(grid) do
         for x, _ in pairs(row) do
-            love.graphics.rectangle("fill", x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)
+            love.graphics.ellipse("fill", PADDING + x * TILE_SIZE, PADDING + y * TILE_SIZE, ellipse_size, ellipse_size)
         end
     end
 
@@ -141,19 +149,19 @@ function love.draw()
     -- Draw rectangles with varying colors
     for i, rect in ipairs(rects) do
         -- Generate color using math - create rainbow effect
-        local hue = (i / #rects) * 6.28318          -- Full circle in radians
-        local r = 0.5 + 0.5 * math.sin(hue)
-        local g = 0.5 + 0.5 * math.sin(hue + 2.094) -- 120 degrees offset
-        local b = 0.5 + 0.5 * math.sin(hue + 4.189) -- 240 degrees offset
-        local a = 0.3 + 0.2 * math.sin(i * 0.5)     -- Vary opacity between 0.3 and 0.5
+        local hue = (i / #rects) * 6.28318      -- Full circle in radians
+        local r = 0.5 * math.sin(hue)
+        local g = 0.5 * math.sin(hue + 2.094)   -- 120 degrees offset
+        local b = 0.5 * math.sin(hue + 4.189)   -- 240 degrees offset
+        local a = 0.3 + 0.2 * math.sin(i * 0.5) -- Vary opacity between 0.3 and 0.5
 
         love.graphics.setColor(r, g, b, a)
 
         -- Convert rect points to scaled vertices for polygon drawing
         local vertices = {}
         for _, point in ipairs(rect) do
-            table.insert(vertices, point.x * TILE_SIZE)
-            table.insert(vertices, point.y * TILE_SIZE)
+            table.insert(vertices, PADDING + point.x * TILE_SIZE)
+            table.insert(vertices, PADDING + point.y * TILE_SIZE)
         end
 
         if #vertices >= 6 then -- Need at least 3 points (6 values) for a polygon
@@ -167,7 +175,7 @@ function love.draw()
         local points = { tri.body:getWorldPoints(tri.shape:getPoints()) }
         local scaledPoints = {}
         for i = 1, #points do
-            scaledPoints[i] = points[i] * TILE_SIZE
+            scaledPoints[i] = PADDING + points[i] * TILE_SIZE
         end
         love.graphics.polygon("line", scaledPoints)
     end
