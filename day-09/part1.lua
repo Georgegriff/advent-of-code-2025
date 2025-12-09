@@ -37,7 +37,7 @@ function M.get_points(input_file)
     local x_max = 0
     local y_max = 0
     file_utils.read_file_lines(input_file, function(line)
-        local x, y = table.unpack(string_utils.split(line, ",", function(str)
+        local x, y = unpack(string_utils.split(line, ",", function(str)
             return tonumber(str)
         end))
 
