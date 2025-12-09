@@ -72,7 +72,7 @@ function love.load()
     love.window.setTitle("Day 9")
 
     -- Load points
-    points, max_bounds = m.get_points("./inputs/input.txt")
+    points, max_bounds = m.get_points("./inputs/test.txt")
 
     -- Calculate scale to fit everything in window
     local grid_width = max_bounds.width
@@ -117,11 +117,12 @@ function love.draw()
 
     -- Draw filled points as red dots
     love.graphics.setColor(0.9, 0.1, 0.1)
+    local dot_radius = math.max(1, math.min(3, scale * 0.5))
     for y, row in pairs(grid) do
         for x, _ in pairs(row) do
             local px = offset_x + x * scale
             local py = offset_y + y * scale
-            love.graphics.circle("fill", px, py, math.max(1, scale * 2))
+            love.graphics.circle("fill", px, py, dot_radius)
         end
     end
 
