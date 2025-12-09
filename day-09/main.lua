@@ -26,9 +26,25 @@ function getPolygon(points)
     return vertices
 end
 
+function checkCollision(physTriangles, x, y)
+    for _, triangle in ipairs(physTriangles) do
+        if (triangle.fixture:testPoint(x, y)) then
+            return true
+        end
+    end
+
+    return false
+end
+
+---Check if rectangle is entirely inside the area defined by the polygon
 ---@return boolean
 function is_inside_area(physTriangles, rect)
-    return false
+    for _, point in ipairs(rect) do
+        if not checkCollision(physTriangles, point.x, point.y) then
+            return false
+        end
+    end
+    return true
 end
 
 ---@return table[]
@@ -52,19 +68,8 @@ function get_rects(physTriangles, points)
     return rects
 end
 
-function checkCollision(physTriangles, x, y)
-    for _, triangle in ipairs(physTriangles) do
-        if (triangle.fixture:testPoint(x, y)) then
-            return true
-        end
-    end
-
-    return false
-end
-
-local chainShape = nil
-local chainBody = nil
-local chainFixture = nil
+local triangles = nil
+local trianglesPhs = {}
 local rects = {}
 local world
 function love.load()
@@ -89,15 +94,31 @@ function love.load()
 
     world = love.physics.newWorld(0, 0, true)
 
-    -- Create chain shape from points
-    local vertices = getPolygon(points)
-    chainShape = love.physics.newChainShape(true, vertices) -- true for looping
-    chainBody = love.physics.newBody(world, 0, 0, "static")
-    chainFixture = love.physics.newFixture(chainBody, chainShape)
+    -- Triangulate the polygon
+    triangles = love.math.triangulate(getPolygon(points))
 
-    print(string.format("Chain shape created with %d vertices", #vertices / 2))
+    -- Create physics triangles from triangulation
+    for i = 1, #triangles do
+        local tri = triangles[i]
+        print(string.format("Triangle %d: (%.2f,%.2f) (%.2f,%.2f) (%.2f,%.2f)",
+            i, tri[1], tri[2], tri[3], tri[4], tri[5], tri[6]))
+    end
 
-    rects = get_rects({ { fixture = chainFixture, body = chainBody, shape = chainShape } }, points)
+    for i = 1, #triangles do
+        local poly = love.physics.newPolygonShape(unpack(triangles[i]))
+        local body = love.physics.newBody(world, 0, 0, "static")
+
+        local fixture = love.physics.newFixture(body, poly)
+        local trianglePhyShape = {
+            bounds = triangles,
+            shape = poly,
+            body = body,
+            fixture = fixture
+        }
+        table.insert(trianglesPhs, trianglePhyShape)
+    end
+
+    rects = get_rects(trianglesPhs, points)
 
 
     -- Create grid
@@ -149,26 +170,16 @@ function love.draw()
         end
     end
 
-    -- Draw physics chain
+    -- Draw physics triangles
     love.graphics.setColor(1, 1, 1, 1)
-    if chainShape then
-        local points = { chainBody:getWorldPoints(chainShape:getPoints()) }
-        if #points >= 4 then
-            for i = 1, #points - 2, 2 do
-                local x1 = offset_x + points[i] * scale
-                local y1 = offset_y + points[i + 1] * scale
-                local x2 = offset_x + points[i + 2] * scale
-                local y2 = offset_y + points[i + 3] * scale
-                love.graphics.line(x1, y1, x2, y2)
-            end
-            -- Close the loop
-            love.graphics.line(
-                offset_x + points[#points - 1] * scale,
-                offset_y + points[#points] * scale,
-                offset_x + points[1] * scale,
-                offset_y + points[2] * scale
-            )
+    for _, tri in ipairs(trianglesPhs) do
+        local points = { tri.body:getWorldPoints(tri.shape:getPoints()) }
+        local scaledPoints = {}
+        for i = 1, #points, 2 do
+            table.insert(scaledPoints, offset_x + points[i] * scale)
+            table.insert(scaledPoints, offset_y + points[i + 1] * scale)
         end
+        love.graphics.polygon("line", scaledPoints)
     end
 end
 
