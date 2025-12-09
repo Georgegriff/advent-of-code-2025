@@ -24,24 +24,13 @@ function M.get_ordered_distances(points)
             table.insert(distances, {
                 distance = distance,
                 startPoint = pointA,
-                endPoint = pointB,
-                -- Store original indices for deterministic ordering
-                idx_a = i,
-                idx_b = j
+                endPoint = pointB
             })
         end
     end
 
     table.sort(distances, function(distA, distB)
-        -- Primary sort by distance
-        if distA.distance ~= distB.distance then
-            return distA.distance < distB.distance
-        end
-        -- Tiebreaker: use original point indices (most deterministic)
-        if distA.idx_a ~= distB.idx_a then
-            return distA.idx_a < distB.idx_a
-        end
-        return distA.idx_b < distB.idx_b
+        return distA.distance < distB.distance
     end)
 
     return distances
@@ -54,13 +43,6 @@ function M.load_points(input_file)
         local x, y, z = unpack(string_utils.split(line, ",", function(str_part) return tonumber(str_part) end))
         local point = Point(x, y, z)
         table.insert(points, point)
-    end)
-
-    -- Sort points for deterministic ordering
-    table.sort(points, function(a, b)
-        if a.x ~= b.x then return a.x < b.x end
-        if a.y ~= b.y then return a.y < b.y end
-        return a.z < b.z
     end)
 
     return points
