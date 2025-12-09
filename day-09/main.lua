@@ -65,8 +65,9 @@ function checkCollision(physTriangles, x, y)
     return false
 end
 
-local triangles = nil
-local trianglesPhs = {}
+local chainShape = nil
+local chainBody = nil
+local chainFixture = nil
 local rects = {}
 local world
 function love.load()
@@ -85,30 +86,17 @@ function love.load()
 
     print(string.format("Grid dimensions: %dx%d, Tile size: %.2f", grid_width, grid_height, TILE_SIZE))
 
-    triangles = love.math.triangulate(getPolygon(points))
     world = love.physics.newWorld(0, 0, true)
 
-    -- Print triangle coordinates (compact)
-    for i = 1, #triangles do
-        local tri = triangles[i]
-        print(string.format("Triangle %d: (%.2f,%.2f) (%.2f,%.2f) (%.2f,%.2f)",
-            i, tri[1], tri[2], tri[3], tri[4], tri[5], tri[6]))
-    end
-    for i = 1, #triangles do
-        local poly = love.physics.newPolygonShape(unpack(triangles[i]))
-        local body = love.physics.newBody(world, 0, 0, "static")
+    -- Create chain shape from points
+    local vertices = getPolygon(points)
+    chainShape = love.physics.newChainShape(true, vertices) -- true for looping
+    chainBody = love.physics.newBody(world, 0, 0, "static")
+    chainFixture = love.physics.newFixture(chainBody, chainShape)
 
-        local fixture = love.physics.newFixture(body, poly)
-        local trianglePhyShape = {
-            bounds = triangles,
-            shape = poly,
-            body = body,
-            fixture = fixture
-        }
-        table.insert(trianglesPhs, trianglePhyShape)
-    end
+    print(string.format("Chain shape created with %d vertices", #vertices / 2))
 
-    rects = get_rects(trianglesPhs, points)
+    rects = get_rects({ { fixture = chainFixture, body = chainBody, shape = chainShape } }, points)
 
 
     -- Create grid
@@ -169,15 +157,25 @@ function love.draw()
         end
     end
 
-    -- Draw physics triangles (scale from grid to pixel coordinates)
+    -- Draw physics chain (scale from grid to pixel coordinates)
     love.graphics.setColor(1, 1, 1, 1)
-    for _, tri in ipairs(trianglesPhs) do
-        local points = { tri.body:getWorldPoints(tri.shape:getPoints()) }
+    if chainShape then
+        local points = { chainBody:getWorldPoints(chainShape:getPoints()) }
         local scaledPoints = {}
         for i = 1, #points do
             scaledPoints[i] = PADDING + points[i] * TILE_SIZE
         end
-        love.graphics.polygon("line", scaledPoints)
+        -- Draw as a closed line loop
+        if #scaledPoints >= 4 then
+            for i = 1, #scaledPoints - 2, 2 do
+                local x1, y1 = scaledPoints[i], scaledPoints[i + 1]
+                local x2, y2 = scaledPoints[i + 2], scaledPoints[i + 3]
+                love.graphics.line(x1, y1, x2, y2)
+            end
+            -- Close the loop
+            love.graphics.line(scaledPoints[#scaledPoints - 1], scaledPoints[#scaledPoints],
+                scaledPoints[1], scaledPoints[2])
+        end
     end
 end
 
