@@ -5,7 +5,6 @@ local M = {}
 
 
 function M.solution(input_file)
-    local i = 1
     local sum = 0
     file_utils.read_file_lines(input_file, function(line)
         ---@type Operation
