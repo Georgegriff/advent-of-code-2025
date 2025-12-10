@@ -6,15 +6,13 @@ local M = {}
 
 function M.solution(input_file)
     local i = 1
+    local sum = 0
     file_utils.read_file_lines(input_file, function(line)
-        if (i == 1) then
-            ---@type Operation
-            local operation = Operation.from_input_string(line)
-            print("\n" .. operation:to_values_string())
-        end
-        i = i + 1
+        ---@type Operation
+        local operation = Operation.from_input_string(line)
+        sum = sum + operation:find_min_presses()
     end)
-    return 0
+    return sum
 end
 
 if script_utils.should_run_main() then

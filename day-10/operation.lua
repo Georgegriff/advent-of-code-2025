@@ -1,6 +1,7 @@
 local Object = require "utils.object"
 local State = require "state"
 ---@class Operation : Object
+---@field current State
 ---@field target State
 ---@field buttons State[]
 local Operation = Object:extend()
@@ -14,6 +15,31 @@ local TOKENS = {
     BUTTON_SEPARATOR = ",",
     BUTTON_END = ")"
 }
+
+local function combos_of_size(list, k)
+    local results = {}
+
+    local function backtrack(start, current)
+        -- If we reached size k, store a copy
+        if #current == k then
+            local c = {}
+            for i = 1, k do c[i] = current[i] end
+            results[#results + 1] = c
+            return
+        end
+
+        -- Try all remaining elements
+        for i = start, #list do
+            current[#current + 1] = list[i]
+            backtrack(i + 1, current)
+            current[#current] = nil -- undo
+        end
+    end
+
+    backtrack(1, {})
+    return results
+end
+
 
 ---@param input string
 function Operation.from_input_string(input)
@@ -40,6 +66,15 @@ function Operation.from_input_string(input)
     end
 
     return Operation(target, buttons)
+end
+
+function Operation.create_initial_state(target_size)
+    local values = {}
+    for i = 1, target_size do
+        table.insert(values, 0)
+    end
+
+    return State(values)
 end
 
 ---@param input string
@@ -84,6 +119,39 @@ end
 function Operation:new(target, buttons)
     self.target = target
     self.buttons = buttons
+    self:reset()
+end
+
+function Operation:reset()
+    self.current = Operation.create_initial_state(#self.target.values)
+end
+
+function Operation:find_min_presses()
+    for combo_size = 1, #self.buttons do
+        local combinations = combos_of_size(self.buttons, combo_size)
+        for _, button_combo in ipairs(combinations) do
+            self:reset()
+            self:xor_array(button_combo)
+            if self:state_matches_target() then
+                return combo_size
+            end
+        end
+    end
+
+    return nil
+end
+
+---@param input_arr State[]
+function Operation:xor_array(input_arr)
+    for _, button in ipairs(input_arr) do
+        self.current:xor(button)
+    end
+end
+
+function Operation:state_matches_target()
+    local target_str = self.target:to_target_string()
+    local current_str = self.current:to_target_string()
+    return target_str == current_str
 end
 
 function Operation:to_string()

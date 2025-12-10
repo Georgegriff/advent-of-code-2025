@@ -55,9 +55,13 @@ function State:__tostring()
     end
 end
 
----@param sequence State
-function State:xor(sequence)
-
+---@param state State
+---@return State
+function State:xor(state)
+    for i = 1, #self.values do
+        self.values[i] = self.values[i] ~ state.values[i]
+    end
+    return self
 end
 
 return State
