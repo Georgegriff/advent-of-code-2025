@@ -16,30 +16,24 @@ local TOKENS = {
     BUTTON_END = ")"
 }
 
-local function combos_of_size(list, k)
-    local results = {}
+function combinations(arr, k)
+    local result = {}
 
-    local function backtrack(start, current)
-        -- If we reached size k, store a copy
-        if #current == k then
-            local c = {}
-            for i = 1, k do c[i] = current[i] end
-            results[#results + 1] = c
+    local function helper(start, combo)
+        if #combo == k then
+            table.insert(result, { table.unpack(combo) })
             return
         end
-
-        -- Try all remaining elements
-        for i = start, #list do
-            current[#current + 1] = list[i]
-            backtrack(i + 1, current)
-            current[#current] = nil -- undo
+        for i = start, #arr do
+            table.insert(combo, arr[i])
+            helper(i + 1, combo)
+            table.remove(combo) -- backtrack
         end
     end
 
-    backtrack(1, {})
-    return results
+    helper(1, {})
+    return result
 end
-
 
 ---@param input string
 function Operation.from_input_string(input)
@@ -128,7 +122,7 @@ end
 
 function Operation:find_min_presses()
     for combo_size = 1, #self.buttons do
-        local combinations = combos_of_size(self.buttons, combo_size)
+        local combinations = combinations(self.buttons, combo_size)
         for _, button_combo in ipairs(combinations) do
             self:reset()
             self:xor_array(button_combo)
