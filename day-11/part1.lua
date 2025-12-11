@@ -3,25 +3,16 @@ local script_utils = require("utils.script")
 local Graph = require("graph")
 local M = {}
 
-
 function M.solution(input_file)
-    ---@type Graph
     local graph = Graph()
     file_utils.read_file_lines(input_file, function(line)
         graph:parse_input_line(line)
     end)
-    local path_counter = 0
-    graph:traverse("you", function(node, visited_nodes)
-        if node.id == "out" then
-            local nodes = {}
-            for path in visited_nodes:pairs() do
-                table.insert(nodes, path)
-            end
-            -- print(table.concat(nodes, ","))
-            path_counter = path_counter + 1
-        end
-    end)
-    return path_counter
+
+    local start_node = "you"
+    local end_node = "out"
+
+    return graph:count_paths(start_node, end_node)
 end
 
 if script_utils.should_run_main() then

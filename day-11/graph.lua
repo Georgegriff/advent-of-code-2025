@@ -80,4 +80,41 @@ function Graph:print()
     print(self:to_s())
 end
 
+---@param start_node_id string
+---@param end_node_id string
+---@return number
+function Graph:count_paths(start_node_id, end_node_id)
+    local path_counts = {}
+
+
+    local function count_from_node(current_id, target_id)
+        if path_counts[current_id] ~= nil then
+            return path_counts[current_id]
+        end
+
+        if current_id == target_id then
+            path_counts[current_id] = 1
+            return 1
+        end
+
+        local current_node = self.nodes[current_id]
+        local has_neighbors = current_node and current_node.neighbors and #current_node.neighbors > 0
+
+        if not has_neighbors then
+            path_counts[current_id] = 0
+            return 0
+        end
+
+        local paths_from_current = 0
+        for _, neighbor in ipairs(current_node.neighbors) do
+            paths_from_current = paths_from_current + count_from_node(neighbor.id, target_id)
+        end
+
+        path_counts[current_id] = paths_from_current
+        return paths_from_current
+    end
+
+    return count_from_node(start_node_id, end_node_id)
+end
+
 return Graph

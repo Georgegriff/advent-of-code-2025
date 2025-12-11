@@ -10,28 +10,24 @@ function M.solution(input_file)
     file_utils.read_file_lines(input_file, function(line)
         graph:parse_input_line(line)
     end)
-    local path_counter = 0
-    graph:traverse("svr", function(node, visited_nodes)
-        if node.id == "out" then
-            local nodes = {}
-            local has_dac = false
-            local has_fft = false
-            for path in visited_nodes:pairs() do
-                table.insert(nodes, path)
-                if path == "dac" then
-                    has_dac = true
-                elseif path == "fft" then
-                    has_fft = true
-                end
-            end
 
-            if has_dac and has_fft then
-                print(table.concat(nodes, ","))
-                path_counter = path_counter + 1
-            end
-        end
-    end)
-    return path_counter
+
+    -- Cases:
+    -- SVR -> DAC -> FFT -> OUT
+    --- SVR -> FFT -> DAC -> OUT
+    -- if any are zero, no paths
+    -- The idea is you find all the paths from one node to another and then multiply
+    local svr_to_dac = graph:count_paths("svr", "dac")
+    local dac_to_fft = graph:count_paths("dac", "fft")
+    local fft_to_out = graph:count_paths("fft", "out")
+    local paths_dac_then_fft = svr_to_dac * dac_to_fft * fft_to_out
+
+    local svr_to_fft = graph:count_paths("svr", "fft")
+    local fft_to_dac = graph:count_paths("fft", "dac")
+    local dac_to_out = graph:count_paths("dac", "out")
+    local paths_fft_then_dac = svr_to_fft * fft_to_dac * dac_to_out
+
+    return paths_dac_then_fft + paths_fft_then_dac
 end
 
 if script_utils.should_run_main() then
