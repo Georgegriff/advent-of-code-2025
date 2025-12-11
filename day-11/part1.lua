@@ -11,8 +11,13 @@ function M.solution(input_file)
         graph:parse_input_line(line)
     end)
     local path_counter = 0
-    graph:traverse("you", function(node)
+    graph:traverse("you", function(node, visited_nodes)
         if node.id == "out" then
+            local nodes = {}
+            for path in visited_nodes:pairs() do
+                table.insert(nodes, path)
+            end
+            -- print(table.concat(nodes, ","))
             path_counter = path_counter + 1
         end
     end)

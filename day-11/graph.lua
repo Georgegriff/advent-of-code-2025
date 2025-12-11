@@ -1,7 +1,9 @@
 local Object = require "utils.object"
 local Node = require "node"
 local string_utils = require "utils.string"
+local OrderedMap = require "utils.orderedmap"
 local unpack = table.unpack or unpack
+
 
 ---@class Graph : Object
 ---@field coordinates Point[][]
@@ -41,20 +43,21 @@ function Graph:get_node(id)
 end
 
 ---@param start_node_id string
----@param callback fun(node: Node)
+---@param callback fun(node: Node, visited_nodes: table)
 function Graph:traverse(start_node_id, callback)
     ---@param search_node Node
     function dfs(search_node, visited_nodes)
-        visited_nodes = visited_nodes or {}
-        if visited_nodes[search_node.id] then
+        ---@type OrderedMap
+        visited_nodes = visited_nodes or OrderedMap()
+        if visited_nodes:get(search_node.id) == true then
             return
         end
-        visited_nodes[search_node.id] = true
-        callback(search_node)
+        visited_nodes:set(search_node.id, true)
+        callback(search_node, visited_nodes)
         for _, neighbor in ipairs(search_node.neighbors) do
             dfs(neighbor, visited_nodes)
         end
-        visited_nodes[search_node.id] = nil
+        visited_nodes:remove(search_node.id)
     end
 
     local start_node = self.nodes[start_node_id]
