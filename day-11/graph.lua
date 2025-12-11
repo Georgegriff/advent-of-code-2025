@@ -46,7 +46,7 @@ function Graph:traverse(start_node_id, callback)
     ---@param search_node Node
     function dfs(search_node, visited_nodes)
         visited_nodes = visited_nodes or {}
-        if visited_nodes[start_node_id.id] then
+        if visited_nodes[search_node.id] then
             return
         end
         visited_nodes[search_node.id] = true
@@ -54,7 +54,7 @@ function Graph:traverse(start_node_id, callback)
         for _, neighbor in ipairs(search_node.neighbors) do
             dfs(neighbor, visited_nodes)
         end
-        return
+        visited_nodes[search_node.id] = nil
     end
 
     local start_node = self.nodes[start_node_id]
