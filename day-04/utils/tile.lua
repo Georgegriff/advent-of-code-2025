@@ -28,11 +28,3 @@ function Tile:draw(grid, x, y)
 end
 
 return Tile
-
-
-
-
-
-
-
-
