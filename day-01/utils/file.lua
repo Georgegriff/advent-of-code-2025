@@ -10,6 +10,8 @@ function M.read_file(filename)
     return content
 end
 
+---@param filename string
+---@param callback fun(input: string)
 function M.read_file_lines(filename, callback)
     local file = io.open(filename, "r")
     if not file then
